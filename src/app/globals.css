@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-playfair: "Playfair Display", Georgia, "Times New Roman", serif;
+
+  --casarei-primary: #D96C8A;
+  --casarei-primary-dark: #C85D7B;
+  --casarei-primary-deep: #4B2E2B;
+  --casarei-primary-light: #F8E7EC;
+  --casarei-primary-bg: #F8E7EC;
+  --casarei-app-bg: #F8F4F1;
+  --casarei-surface: #FFFDFC;
+  --casarei-text-primary: #4B2E2B;
+  --casarei-text-secondary: #8A716D;
+  --casarei-pink: #D96C8A;
+  --casarei-pink-hover: #C85D7B;
+  --casarei-pink-soft: #F8E7EC;
+  --casarei-green: #9CAF88;
+  --casarei-green-soft: #EEF3EA;
+  --casarei-terracotta: #D28B6E;
+  --casarei-blue-soft: #A8B7C7;
+  --casarei-gold: #C6A77D;
+
+  --neutral-ink: #1a1a1a;
+  --neutral-text: #4B2E2B;
+  --neutral-muted: #8A716D;
+  --neutral-border: #E3D8D2;
+  --neutral-border-soft: #EEE6E1;
+  --neutral-bg: #F8F4F1;
+  --neutral-cream: #F8F4F1;
+  --neutral-white: #FFFDFC;
+
+  --success: #9CAF88;
+  --success-bg: #EEF3EA;
+  --success-text: #5F7752;
+  --warning: #D28B6E;
+  --warning-bg: #FBEEE8;
+  --warning-text: #B96F52;
+  --danger: #D96C8A;
+  --danger-bg: #F8E7EC;
+  --danger-text: #C85D7B;
+  --info: #A8B7C7;
+  --info-bg: #EEF1F4;
+  --premium: #C6A77D;
+  --premium-bg: #F7EEDC;
+  --whatsapp: #25D366;
+
+  --background: 26 33% 96%;
+  --foreground: 6 27% 23%;
+  --card: 20 60% 99%;
+  --card-foreground: 6 27% 23%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 342 58% 64%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 342 54% 94%;
+  --secondary-foreground: 6 27% 23%;
+  --muted: 25 28% 92%;
+  --muted-foreground: 8 12% 48%;
+  --accent: 37 80% 92%;
+  --accent-foreground: 33 89% 21%;
+  --destructive: 0 72% 59%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 48 14% 82%;
+  --input: 48 14% 82%;
+  --ring: 342 58% 64%;
+  --radius: 1rem;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background font-sans text-foreground antialiased;
+}
+
+::selection {
+  background: var(--casarei-primary-light);
+  color: var(--casarei-primary-deep);
+}
+
+.serif-heading {
+  @apply font-serif font-medium text-casarei-primary-deep;
+}
+
+.surface-lift {
+  box-shadow: 0 18px 55px rgba(75, 46, 43, 0.07);
+}
+
+@layer components {
+  .casarei-app-shell {
+    @apply min-h-screen bg-casarei-app text-casarei-text-primary;
+  }
+
+  .casarei-surface {
+    @apply bg-casarei-surface text-casarei-text-primary shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft;
+  }
+
+  .casarei-card {
+    @apply rounded-[24px] bg-casarei-surface p-5 text-casarei-text-primary shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft;
+  }
+
+  .casarei-primary-button {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-casarei-pink px-4 text-sm font-semibold text-white transition hover:bg-casarei-pink-hover;
+  }
+
+  .casarei-secondary-button {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-casarei-border-soft bg-casarei-surface px-4 text-sm font-semibold text-casarei-text-primary transition hover:bg-casarei-app;
+  }
+
+  .casarei-tabs {
+    @apply flex gap-1 rounded-full bg-casarei-surface p-1 shadow-[0_12px_35px_rgba(75,46,43,0.06)];
+  }
+
+  .casarei-tab {
+    @apply rounded-full px-4 py-3 text-sm font-semibold text-casarei-text-secondary transition hover:bg-casarei-app;
+  }
+
+  .casarei-tab-active {
+    @apply rounded-full bg-casarei-text-primary px-4 py-3 text-sm font-semibold text-white;
+  }
+}
+
+.soft-appear {
+  animation: soft-appear 420ms ease-out both;
+}
+
+.gentle-float {
+  animation: gentle-float 5s ease-in-out infinite;
+}
+
+@keyframes soft-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gentle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}

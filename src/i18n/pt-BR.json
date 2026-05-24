@@ -1,0 +1,23 @@
+{
+  "brand": {
+    "name": "Casarei",
+    "tagline": "Planejamento de casamento para noivas no Brasil"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "tasks": "Tarefas",
+    "budget": "Orçamento",
+    "guests": "Convidados",
+    "more": "Mais"
+  },
+  "routes": {
+    "onboarding": "Onboarding",
+    "dashboard": "Inicio",
+    "tasks": "Tarefas",
+    "budget": "Orçamento",
+    "guests": "Convidados",
+    "sendGuests": "Enviar RSVP",
+    "vendors": "Fornecedores",
+    "rsvp": "RSVP"
+  }
+}
