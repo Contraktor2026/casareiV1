@@ -7,3 +7,4 @@ dist
 *.tsbuildinfo
 *.log
 ~$*
+senha banco*.txt
