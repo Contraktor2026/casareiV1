@@ -42,6 +42,24 @@ export async function signUpWithEmail(email: string, password: string, fullName:
   });
 }
 
+export async function requestPasswordReset(email: string) {
+  const config = getSupabaseBrowserConfig();
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
+  const response = await fetch(`${config.url}/auth/v1/recover`, {
+    method: "POST",
+    headers: {
+      apikey: config.anonKey,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, redirect_to: redirectTo })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.msg || error?.message || "Não foi possível enviar o email de recuperação.");
+  }
+}
+
 export function saveSession(response: AuthResponse) {
   const accessToken = response.access_token ?? response.session?.access_token;
   const refreshToken = response.refresh_token ?? response.session?.refresh_token;

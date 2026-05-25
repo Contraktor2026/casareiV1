@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Heart, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, Heart, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { saveSession, signInWithEmail, signUpWithEmail } from "@/lib/client/supabase-auth";
+import { requestPasswordReset, saveSession, signInWithEmail, signUpWithEmail } from "@/lib/client/supabase-auth";
 
 type AuthMode = "signin" | "signup";
 
@@ -25,7 +25,7 @@ export function LoginPage() {
 
     const cleanEmail = email.trim().toLowerCase();
     if (!isValidEmail(cleanEmail)) {
-      setMessage("Informe um email válido para cadastrar sua conta.");
+      setMessage("Informe um email válido para continuar.");
       return;
     }
 
@@ -46,6 +46,26 @@ export function LoginPage() {
       router.push(mode === "signup" ? "/onboarding" : "/app");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível entrar agora.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function recoverPassword() {
+    setMessage("");
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(cleanEmail)) {
+      setMessage("Informe seu email para recuperar a senha.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await requestPasswordReset(cleanEmail);
+      setMessage("Enviamos um link de recuperação para o seu email.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível enviar o email de recuperação.");
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +97,14 @@ export function LoginPage() {
           <form onSubmit={submit} className="mt-6 grid gap-4">
             {mode === "signup" ? <Field label="Nome" value={name} placeholder="Seu nome" onChange={setName} /> : null}
             <Field label="Email" value={email} placeholder="voce@email.com" type="email" icon onChange={setEmail} />
-            <Field label="Senha" value={password} placeholder="Digite sua senha" type="password" onChange={setPassword} />
+            <Field
+              label="Senha"
+              value={password}
+              placeholder={mode === "signup" ? "Crie uma senha" : "Digite sua senha"}
+              type="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              onChange={setPassword}
+            />
 
             {message ? <p className="rounded-2xl bg-[#FBEEE8] px-4 py-3 text-sm font-semibold text-[#B96F52]">{message}</p> : null}
 
@@ -87,14 +114,24 @@ export function LoginPage() {
             </Button>
           </form>
 
+          {mode === "signin" ? (
+            <button
+              type="button"
+              onClick={recoverPassword}
+              disabled={isLoading}
+              className="mt-4 w-full text-center text-sm font-semibold text-casarei-primary"
+            >
+              Esqueci minha senha
+            </button>
+          ) : (
+            <p className="mt-4 text-center text-xs leading-5 text-casarei-muted">
+              Ao criar sua conta, você poderá acessar seu planejamento com este email sempre que precisar.
+            </p>
+          )}
+
           <Button asChild variant="ghost" className="mt-3 w-full">
             <Link href="/">Voltar</Link>
           </Button>
-
-          <p className="mt-5 flex items-start gap-2 text-xs leading-5 text-casarei-muted">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-casarei-primary" aria-hidden />
-            Use um email válido. Ele será usado para acessar sua conta e recuperar sua senha quando precisar.
-          </p>
         </div>
       </section>
     </main>
@@ -106,11 +143,12 @@ type FieldProps = {
   value: string;
   placeholder: string;
   type?: string;
+  autoComplete?: string;
   icon?: boolean;
   onChange: (value: string) => void;
 };
 
-function Field({ label, value, placeholder, type = "text", icon = false, onChange }: FieldProps) {
+function Field({ label, value, placeholder, type = "text", autoComplete, icon = false, onChange }: FieldProps) {
   return (
     <label className="space-y-2 text-sm font-semibold text-casarei-primary-deep">
       {label}
@@ -120,7 +158,7 @@ function Field({ label, value, placeholder, type = "text", icon = false, onChang
           type={type}
           value={value}
           required
-          autoComplete={type === "password" ? "current-password" : type === "email" ? "email" : "name"}
+          autoComplete={autoComplete ?? (type === "password" ? "current-password" : type === "email" ? "email" : "name")}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-casarei-muted/70"
