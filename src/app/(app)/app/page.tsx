@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckSquare,
   ChevronRight,
+  ClipboardList,
   MapPin,
   Sparkles,
   Store,
@@ -247,7 +248,8 @@ export default function DashboardPage() {
 
           <div className="mt-4 space-y-2">
             {STARTER_STEPS.map((step, i) => {
-              const done = i < stepsCompleted;
+              const stepsDone = [hasBasics, guestCount > 0, vendorCount > 0, Boolean(onboarding?.plannedBudget)];
+              const done = stepsDone[i];
               return (
                 <Link
                   key={step.href}
@@ -275,7 +277,8 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Módulos</h2>
         <div className="space-y-2">
           {[
-            { title: "Convidados", sub: "Lista, grupos, RSVP e mesas", href: "/app/convidados", icon: Users },
+            { title: "Convidados", sub: "Lista, grupos, RSVP e confirmações", href: "/app/convidados", icon: Users },
+            { title: "Presença e Mesas", sub: "Check-in, mesas e acomodações", href: "/app/presenca-mesas", icon: ClipboardList },
             { title: "Fornecedores", sub: "Contratos, pagamentos e cotações", href: "/app/fornecedores", icon: Store },
             { title: "Financeiro", sub: "Orçamento, categorias e projeções", href: "/app/orcamento", icon: Wallet },
             { title: "Agenda", sub: "Cronograma mensal e tarefas", href: "/app/cronograma", icon: CheckSquare },

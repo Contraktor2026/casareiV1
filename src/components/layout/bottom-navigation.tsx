@@ -25,7 +25,7 @@ const RIGHT_TABS = [
   },
   {
     href: "/app/orcamento",
-    label: "Conta",
+    label: "Financeiro",
     icon: Wallet,
     match: ["/app/orcamento", "/app/fornecedores", "/app/cotacoes"],
   },
