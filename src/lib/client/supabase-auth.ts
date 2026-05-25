@@ -56,7 +56,7 @@ export async function requestPasswordReset(email: string) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);
-    throw new Error(error?.msg || error?.message || "Não foi possível enviar o email de recuperação.");
+    throw new Error(formatAuthError(error?.msg || error?.message, "Não foi possível enviar o email de recuperação."));
   }
 }
 
@@ -129,8 +129,26 @@ async function authRequest(path: string, body: Record<string, unknown>) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);
-    throw new Error(error?.msg || error?.message || "Não foi possível autenticar. Verifique os dados e tente novamente.");
+    throw new Error(formatAuthError(error?.msg || error?.message, "Não foi possível autenticar. Verifique os dados e tente novamente."));
   }
 
   return (await response.json()) as AuthResponse;
+}
+
+function formatAuthError(message: string | undefined, fallback: string) {
+  const normalized = (message ?? "").toLowerCase();
+
+  if (normalized.includes("rate limit") || normalized.includes("limite")) {
+    return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.";
+  }
+
+  if (normalized.includes("invalid login") || normalized.includes("invalid credentials")) {
+    return "Email ou senha inválidos.";
+  }
+
+  if (normalized.includes("already registered") || normalized.includes("already exists")) {
+    return "Este email já possui uma conta. Entre usando sua senha.";
+  }
+
+  return message || fallback;
 }
