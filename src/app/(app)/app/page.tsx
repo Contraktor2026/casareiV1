@@ -34,19 +34,19 @@ const quickActions = [
   { label: "Nova tarefa", href: "/app/cronograma", icon: CheckSquare }
 ];
 
-const mobileModules = [
-  { title: "Convidados", text: "Lista, grupos, contatos e cuidados", href: "/app/convidados", icon: Users, status: "87 cadastrados" },
-  { title: "Confirmações", text: "Enviar RSVP e acompanhar respostas", href: "/app/presenca-mesas", icon: CalendarCheck2, status: "42 pendentes" },
-  { title: "Mesas", text: "Mapa de mesas e convidados sem lugar", href: "/app/presenca-mesas/mesas", icon: Table2, status: "8 sem mesa" },
-  { title: "Fornecedores", text: "Contratos, pagamentos e orçamentos", href: "/app/fornecedores", icon: Store, status: "6 fechados" },
-  { title: "Financeiro", text: "Pagamentos, vencimentos e saldo", href: "/app/orcamento", icon: Wallet, status: "62% usado" },
-  { title: "Tarefas", text: "Agenda mensal e próximos passos", href: "/app/cronograma", icon: CheckSquare, status: "8 esta semana" }
+const modules = [
+  { title: "Convidados", text: "Lista, grupos, contatos e cuidados", href: "/app/convidados", icon: Users, status: "Começar" },
+  { title: "Confirmações", text: "Enviar RSVP e acompanhar respostas", href: "/app/presenca-mesas", icon: CalendarCheck2, status: "Configurar" },
+  { title: "Mesas", text: "Mapa de mesas e convidados sem lugar", href: "/app/presenca-mesas/mesas", icon: Table2, status: "Organizar" },
+  { title: "Fornecedores", text: "Contratos, pagamentos e orçamentos", href: "/app/fornecedores", icon: Store, status: "Adicionar" },
+  { title: "Financeiro", text: "Pagamentos, vencimentos e saldo", href: "/app/orcamento", icon: Wallet, status: "Planejar" },
+  { title: "Tarefas", text: "Agenda mensal e próximos passos", href: "/app/cronograma", icon: CheckSquare, status: "Criar" }
 ];
 
-const todayFocus = [
-  { title: "Revisar convidados sem WhatsApp", href: "/app/convidados", tone: "warn" },
-  { title: "Confirmar próximo pagamento", href: "/app/orcamento/pagamentos", tone: "danger" },
-  { title: "Comparar fotografia", href: "/app/cotacoes", tone: "ok" }
+const starterFocus = [
+  { title: "Preencher os dados do casamento", href: "/onboarding", tone: "ok" },
+  { title: "Adicionar os primeiros convidados", href: "/app/convidados", tone: "warn" },
+  { title: "Cadastrar fornecedores e orçamentos", href: "/app/fornecedores", tone: "danger" }
 ];
 
 export default function DashboardPage() {
@@ -67,6 +67,7 @@ export default function DashboardPage() {
   const guestCount = onboarding?.guestCount || 0;
   const plannedBudget = onboarding?.plannedBudget || "orçamento a definir";
   const firstName = onboarding?.brideName || String(session?.user?.user_metadata?.full_name ?? "").split(" ")[0] || "olá";
+  const hasWeddingBasics = Boolean(onboarding?.brideName || onboarding?.partnerName || onboarding?.weddingDate);
 
   function uploadBannerImage(file?: File) {
     if (!file) return;
@@ -115,13 +116,15 @@ export default function DashboardPage() {
             <Sparkles className="h-4 w-4" aria-hidden />
             Sofia
           </div>
-          <h2 className="mt-2 font-serif text-2xl leading-tight">Respira, {firstName}. O casamento já está tomando forma.</h2>
+          <h2 className="mt-2 font-serif text-2xl leading-tight">Oi, {firstName}. Vamos organizar seu casamento do zero.</h2>
           <p className="mt-3 text-sm leading-6 text-[#7B625D]">
-            Base criada para {guestCount} convidados, orçamento {plannedBudget} e fornecedores da região.
+            {hasWeddingBasics
+              ? `Planejamento iniciado para ${guestCount || "seus"} convidados, com ${plannedBudget}.`
+              : "Preencha as primeiras informações para liberar uma jornada personalizada."}
           </p>
           <Button asChild className="mt-4 h-12 w-full rounded-2xl bg-[#D96C8A] font-bold hover:bg-[#C85D7B]">
-            <Link href="/app/cronograma">
-              Ver próximos passos
+            <Link href={hasWeddingBasics ? "/app/cronograma" : "/onboarding"}>
+              {hasWeddingBasics ? "Ver próximos passos" : "Preencher dados iniciais"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
@@ -129,15 +132,15 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid grid-cols-3 gap-3">
-        <SummaryPill value="142" label="dias" />
-        <SummaryPill value="67%" label="organizado" />
-        <SummaryPill value="R$ 8,4k" label="a pagar" />
+        <SummaryPill value={onboarding?.weddingDate ? "Definida" : "A definir"} label="data" />
+        <SummaryPill value="0%" label="organizado" />
+        <SummaryPill value="R$ 0" label="a pagar" />
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serif text-2xl text-[#4B2E2B]">Ações rápidas</h2>
-          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">para hoje</span>
+          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">comece aqui</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action) => (
@@ -155,14 +158,14 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Hoje</p>
-            <h2 className="mt-1 font-serif text-2xl text-[#4B2E2B]">Prioridades para avançar</h2>
+            <h2 className="mt-1 font-serif text-2xl text-[#4B2E2B]">Primeiros passos</h2>
           </div>
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EEF3EA] text-[#5F7752]">
             <CheckCircle2 className="h-5 w-5" />
           </span>
         </div>
         <div className="mt-4 grid gap-3">
-          {todayFocus.map((item) => (
+          {starterFocus.map((item) => (
             <Link key={item.title} href={item.href} className="flex min-h-[58px] items-center gap-3 rounded-2xl bg-[#F8F4F1] px-4 py-3">
               <span className={`h-2.5 w-2.5 rounded-full ${focusTone(item.tone)}`} />
               <span className="flex-1 text-sm font-bold text-[#4B2E2B]">{item.title}</span>
@@ -181,7 +184,7 @@ export default function DashboardPage() {
           <Plus className="h-5 w-5 text-[#D96C8A]" />
         </div>
         <div className="grid gap-3 lg:grid-cols-2">
-          {mobileModules.map((module) => (
+          {modules.map((module) => (
             <Link key={module.title} href={module.href} className="flex min-h-[86px] items-center gap-3 rounded-[22px] bg-white p-4 shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
               <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
                 <module.icon className="h-5 w-5" />
@@ -199,7 +202,7 @@ export default function DashboardPage() {
       <section className="rounded-[24px] bg-[linear-gradient(135deg,#FFF8F4,#F8E7EC)] p-5 text-[#4B2E2B] ring-1 ring-[#EEE6E1]">
         <Heart className="h-6 w-6 text-[#D96C8A]" aria-hidden />
         <h2 className="mt-3 font-serif text-2xl">Cada pequeno passo aproxima vocês do grande dia.</h2>
-        <p className="mt-2 text-sm leading-6 text-[#7B625D]">Cada módulo foi pensado para deixar o planejamento mais simples: ações visíveis, decisões em ordem e informações fáceis de encontrar.</p>
+        <p className="mt-2 text-sm leading-6 text-[#7B625D]">Comece cadastrando apenas o essencial. O restante pode ser organizado aos poucos, módulo por módulo.</p>
       </section>
     </div>
   );
