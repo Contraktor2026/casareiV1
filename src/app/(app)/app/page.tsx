@@ -137,7 +137,7 @@ export default function DashboardPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serif text-2xl text-[#4B2E2B]">Ações rápidas</h2>
-          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">mobile-first</span>
+          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">para hoje</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {quickActions.map((action) => (
@@ -199,7 +199,7 @@ export default function DashboardPage() {
       <section className="rounded-[24px] bg-[linear-gradient(135deg,#FFF8F4,#F8E7EC)] p-5 text-[#4B2E2B] ring-1 ring-[#EEE6E1]">
         <Heart className="h-6 w-6 text-[#D96C8A]" aria-hidden />
         <h2 className="mt-3 font-serif text-2xl">Cada pequeno passo aproxima vocês do grande dia.</h2>
-        <p className="mt-2 text-sm leading-6 text-[#7B625D]">O app agora prioriza o uso no celular: ações visíveis, módulos fáceis de tocar e conteúdo organizado em blocos curtos.</p>
+        <p className="mt-2 text-sm leading-6 text-[#7B625D]">Cada módulo foi pensado para deixar o planejamento mais simples: ações visíveis, decisões em ordem e informações fáceis de encontrar.</p>
       </section>
     </div>
   );

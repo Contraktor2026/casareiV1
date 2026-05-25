@@ -22,13 +22,25 @@ export function LoginPage() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!isValidEmail(cleanEmail)) {
+      setMessage("Informe um email válido para cadastrar sua conta.");
+      return;
+    }
+
+    if (mode === "signup" && !name.trim()) {
+      setMessage("Informe seu nome para criar a conta.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response =
         mode === "signup"
-          ? await signUpWithEmail(email.trim(), password, name.trim())
-          : await signInWithEmail(email.trim(), password);
+          ? await signUpWithEmail(cleanEmail, password, name.trim())
+          : await signInWithEmail(cleanEmail, password);
 
       saveSession(response);
       router.push(mode === "signup" ? "/onboarding" : "/app");
@@ -64,13 +76,13 @@ export function LoginPage() {
 
           <form onSubmit={submit} className="mt-6 grid gap-4">
             {mode === "signup" ? <Field label="Nome" value={name} placeholder="Seu nome" onChange={setName} /> : null}
-            <Field label="Email" value={email} placeholder="voce@email.com" icon onChange={setEmail} />
+            <Field label="Email" value={email} placeholder="voce@email.com" type="email" icon onChange={setEmail} />
             <Field label="Senha" value={password} placeholder="Digite sua senha" type="password" onChange={setPassword} />
 
             {message ? <p className="rounded-2xl bg-[#FBEEE8] px-4 py-3 text-sm font-semibold text-[#B96F52]">{message}</p> : null}
 
             <Button type="submit" size="lg" disabled={isLoading || !email.trim() || !password} className="h-13">
-              {isLoading ? "Aguarde..." : mode === "signup" ? "Criar conta real" : "Entrar"}
+              {isLoading ? "Aguarde..." : mode === "signup" ? "Criar conta" : "Entrar"}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
           </form>
@@ -81,7 +93,7 @@ export function LoginPage() {
 
           <p className="mt-5 flex items-start gap-2 text-xs leading-5 text-casarei-muted">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-casarei-primary" aria-hidden />
-            O acesso usa autenticação real do Supabase. Nenhum usuário de demonstração é criado automaticamente.
+            Use um email válido. Ele será usado para acessar sua conta e recuperar sua senha quando precisar.
           </p>
         </div>
       </section>
@@ -107,6 +119,8 @@ function Field({ label, value, placeholder, type = "text", icon = false, onChang
         <input
           type={type}
           value={value}
+          required
+          autoComplete={type === "password" ? "current-password" : type === "email" ? "email" : "name"}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-casarei-muted/70"
@@ -120,4 +134,8 @@ function tabClass(active: boolean) {
   return active
     ? "rounded-xl bg-white px-3 py-3 text-sm font-bold text-casarei-primary shadow-sm"
     : "rounded-xl px-3 py-3 text-sm font-bold text-casarei-text-secondary";
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

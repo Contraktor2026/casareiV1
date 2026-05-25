@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const highlights = [
-  { icon: CheckCircle2, label: "Tarefas organizadas por prazo" },
-  { icon: Users, label: "Convidados, presença e mesas conectados" },
-  { icon: CalendarHeart, label: "Financeiro e fornecedores no mesmo lugar" }
+  { icon: CheckCircle2, label: "Tarefas claras para cada fase" },
+  { icon: Users, label: "Convidados, confirmações e mesas em ordem" },
+  { icon: CalendarHeart, label: "Fornecedores e orçamento sem confusão" }
 ];
 
 export default function HomePage() {
@@ -17,10 +17,10 @@ export default function HomePage() {
         <div className="max-w-2xl space-y-5">
           <p className="text-xs font-medium uppercase tracking-[0.28em] text-casarei-primary-dark">Casarei</p>
           <h1 className="font-serif text-5xl font-medium leading-none text-casarei-primary-deep md:text-7xl">
-            Planeje o casamento com calma, clareza e beleza.
+            Seu casamento organizado com leveza, do primeiro plano ao grande dia.
           </h1>
           <p className="max-w-xl text-base leading-7 text-casarei-text">
-            Uma central mobile-first para organizar tarefas, financeiro, convidados, presença, mesas e fornecedores em uma experiência única.
+            Reúna tarefas, convidados, confirmações, mesas, fornecedores e orçamento em um só lugar, com uma jornada simples para cuidar de cada detalhe.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -30,7 +30,7 @@ export default function HomePage() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/app">Ver app</Link>
+              <Link href="/login">Criar minha conta</Link>
             </Button>
           </div>
         </div>
