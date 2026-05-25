@@ -76,6 +76,9 @@ export default function DashboardPage() {
   const weddingDate = onboarding?.weddingDate ? formatDate(onboarding.weddingDate) : null;
   const city = onboarding?.city || null;
   const state = onboarding?.state || null;
+  const brideName = onboarding?.brideName || null;
+  const partnerName = onboarding?.partnerName || null;
+  const coupleNames = [brideName, partnerName].filter(Boolean).join(" & ") || null;
   const hasBasics = Boolean(onboarding?.weddingDate || onboarding?.brideName);
 
   const sofiaMessage = useMemo(() => {
@@ -108,7 +111,10 @@ export default function DashboardPage() {
 
         {daysLeft !== null ? (
           <div className="text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">falta</p>
+            {coupleNames && (
+              <p className="font-serif text-xl leading-snug text-white/90">{coupleNames}</p>
+            )}
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55 ${coupleNames ? "mt-2" : ""}`}>falta</p>
             <div className="mt-0.5 font-serif text-[80px] font-light leading-none tracking-tight">
               {daysLeft}
             </div>

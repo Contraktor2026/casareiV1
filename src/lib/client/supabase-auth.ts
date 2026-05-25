@@ -101,13 +101,21 @@ export function clearSession() {
   window.localStorage.removeItem(sessionKey);
 }
 
+export function getUserId(): string | null {
+  return getSession()?.user?.id ?? null;
+}
+
 export function saveOnboardingData(data: OnboardingData) {
-  window.localStorage.setItem(onboardingKey, JSON.stringify(data));
+  const uid = getSession()?.user?.id;
+  const key = uid ? `casarei.${uid}.onboardingData` : onboardingKey;
+  window.localStorage.setItem(key, JSON.stringify(data));
 }
 
 export function getOnboardingData(): OnboardingData | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(onboardingKey);
+  const uid = getSession()?.user?.id;
+  const key = uid ? `casarei.${uid}.onboardingData` : onboardingKey;
+  const raw = window.localStorage.getItem(key);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as OnboardingData;

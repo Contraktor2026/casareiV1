@@ -766,41 +766,45 @@ function AddGuestSheet({ onClose, onSave }: { onClose: () => void; onSave: (data
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
-        <div className="flex items-center justify-between">
+      <section className="flex max-h-[92vh] w-full max-w-[430px] flex-col rounded-t-[32px] bg-casarei-surface shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+        <div className="flex flex-none items-center justify-between p-5 pb-4">
           <h2 className="font-serif text-3xl text-casarei-text-primary">Adicionar convidado</h2>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
         </div>
-        <div className="mt-5 space-y-3">
-          <SheetInput label="Nome do convidado" value={name} onChange={setName} />
-          <label className="block rounded-2xl bg-casarei-app p-4">
-            <span className="text-xs font-bold text-casarei-text-secondary">Grupo</span>
-            <div className="mt-2 flex gap-2">
-              <select value={group} onChange={(event) => setGroup(event.target.value)} className="h-11 min-w-0 flex-1 rounded-xl border border-casarei-border-soft bg-casarei-surface px-3 text-sm font-semibold text-casarei-text-primary outline-none">
-                {groups.map((item) => <option key={item} value={item}>{item}</option>)}
-              </select>
-              <button type="button" onClick={() => setShowNewGroup((value) => !value)} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-casarei-pink text-white" aria-label="Adicionar grupo">
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
-            {showNewGroup ? (
-              <div className="mt-3 grid gap-2 rounded-2xl bg-casarei-surface p-3">
-                <input value={newGroup} onChange={(event) => setNewGroup(event.target.value)} placeholder="Nome do novo grupo" className="h-10 rounded-xl border border-casarei-border-soft bg-white px-3 text-sm font-semibold text-casarei-text-primary outline-none" />
-                <Button type="button" onClick={addGroup} className="h-10 bg-casarei-pink hover:bg-casarei-pink-hover">Adicionar grupo</Button>
+        <div className="flex-1 overflow-y-auto px-5 pb-2">
+          <div className="space-y-3">
+            <SheetInput label="Nome do convidado" value={name} onChange={setName} />
+            <label className="block rounded-2xl bg-casarei-app p-4">
+              <span className="text-xs font-bold text-casarei-text-secondary">Grupo</span>
+              <div className="mt-2 flex gap-2">
+                <select value={group} onChange={(event) => setGroup(event.target.value)} className="h-11 min-w-0 flex-1 rounded-xl border border-casarei-border-soft bg-casarei-surface px-3 text-sm font-semibold text-casarei-text-primary outline-none">
+                  {groups.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+                <button type="button" onClick={() => setShowNewGroup((value) => !value)} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-casarei-pink text-white" aria-label="Adicionar grupo">
+                  <Plus className="h-5 w-5" />
+                </button>
               </div>
-            ) : null}
-          </label>
-          <SheetInput label="Parentesco / relacao" value={relation} onChange={setRelation} />
-          <SheetInput label="WhatsApp" value={phone} onChange={setPhone} />
-          <SheetInput label="Email" value={email} onChange={setEmail} />
-          <SheetInput label="Numero de acompanhantes" value={companions} onChange={setCompanions} />
-          <SheetInput label="Restricao alimentar" value={food} onChange={setFood} />
-          <label className="block rounded-2xl bg-casarei-app p-4">
-            <span className="text-xs font-bold text-casarei-text-secondary">Outras informacoes importantes</span>
-            <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} className="mt-2 w-full resize-none bg-transparent text-sm font-semibold text-casarei-text-primary outline-none" />
-          </label>
+              {showNewGroup ? (
+                <div className="mt-3 grid gap-2 rounded-2xl bg-casarei-surface p-3">
+                  <input value={newGroup} onChange={(event) => setNewGroup(event.target.value)} placeholder="Nome do novo grupo" className="h-10 rounded-xl border border-casarei-border-soft bg-white px-3 text-sm font-semibold text-casarei-text-primary outline-none" />
+                  <Button type="button" onClick={addGroup} className="h-10 bg-casarei-pink hover:bg-casarei-pink-hover">Adicionar grupo</Button>
+                </div>
+              ) : null}
+            </label>
+            <SheetInput label="Parentesco / relacao" value={relation} onChange={setRelation} />
+            <SheetInput label="WhatsApp" value={phone} onChange={setPhone} />
+            <SheetInput label="Email" value={email} onChange={setEmail} />
+            <SheetInput label="Numero de acompanhantes" value={companions} onChange={setCompanions} />
+            <SheetInput label="Restricao alimentar" value={food} onChange={setFood} />
+            <label className="block rounded-2xl bg-casarei-app p-4">
+              <span className="text-xs font-bold text-casarei-text-secondary">Outras informacoes importantes</span>
+              <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} className="mt-2 w-full resize-none bg-transparent text-sm font-semibold text-casarei-text-primary outline-none" />
+            </label>
+          </div>
         </div>
-        <Button type="button" onClick={() => name.trim() && onSave({ name, group, relation, phone, email, companions: Math.max(0, Number.parseInt(companions, 10) || 0), food, notes })} className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Salvar convidado</Button>
+        <div className="flex-none px-5 pb-5 pt-3">
+          <Button type="button" onClick={() => name.trim() && onSave({ name, group, relation, phone, email, companions: Math.max(0, Number.parseInt(companions, 10) || 0), food, notes })} className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Salvar convidado</Button>
+        </div>
       </section>
     </div>
   );
@@ -815,25 +819,29 @@ function EditGuestSheet({ guest, onClose, onSave }: { guest: Guest; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
-        <div className="flex items-center justify-between">
+      <section className="flex max-h-[92vh] w-full max-w-[430px] flex-col rounded-t-[32px] bg-casarei-surface shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+        <div className="flex flex-none items-center justify-between p-5 pb-4">
           <h2 className="font-serif text-3xl text-casarei-text-primary">Editar convidado</h2>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
         </div>
-        <div className="mt-5 space-y-3">
-          <SheetInput label="Nome" value={firstName} onChange={setFirstName} />
-          <SheetInput label="Sobrenome" value={lastName} onChange={setLastName} />
-          <SheetInput label="WhatsApp" value={phone} onChange={setPhone} />
-          <SheetInput label="Grupo" value={group} onChange={setGroup} />
-          <SheetInput label="Restricao alimentar" value={food} onChange={setFood} />
+        <div className="flex-1 overflow-y-auto px-5 pb-2">
+          <div className="space-y-3">
+            <SheetInput label="Nome" value={firstName} onChange={setFirstName} />
+            <SheetInput label="Sobrenome" value={lastName} onChange={setLastName} />
+            <SheetInput label="WhatsApp" value={phone} onChange={setPhone} />
+            <SheetInput label="Grupo" value={group} onChange={setGroup} />
+            <SheetInput label="Restricao alimentar" value={food} onChange={setFood} />
+          </div>
         </div>
-        <Button
-          type="button"
-          onClick={() => onSave({ ...guest, firstName, lastName, phone, group, food: { ...guest.food, buffetNotes: food } })}
-          className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover"
-        >
-          Salvar alteracoes
-        </Button>
+        <div className="flex-none px-5 pb-5 pt-3">
+          <Button
+            type="button"
+            onClick={() => onSave({ ...guest, firstName, lastName, phone, group, food: { ...guest.food, buffetNotes: food } })}
+            className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover"
+          >
+            Salvar alteracoes
+          </Button>
+        </div>
       </section>
     </div>
   );
@@ -845,17 +853,21 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
-        <div className="flex items-center justify-between">
+      <section className="flex max-h-[92vh] w-full max-w-[430px] flex-col rounded-t-[32px] bg-casarei-surface shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+        <div className="flex flex-none items-center justify-between p-5 pb-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-casarei-pink">Lista</p>
             <h2 className="font-serif text-3xl text-casarei-text-primary">Importar convidados</h2>
           </div>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
         </div>
-        <p className="mt-3 text-sm leading-6 text-casarei-text-secondary">Cole uma lista simples, uma pessoa por linha. Use: nome, grupo, WhatsApp, email.</p>
-        <textarea value={text} onChange={(event) => setText(event.target.value)} rows={8} className="mt-4 w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none" />
-        <Button type="button" onClick={() => onImport(text)} className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Importar {count} convidados</Button>
+        <div className="flex-1 overflow-y-auto px-5 pb-2">
+          <p className="text-sm leading-6 text-casarei-text-secondary">Cole uma lista simples, uma pessoa por linha. Use: nome, grupo, WhatsApp, email.</p>
+          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={8} className="mt-4 w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none" />
+        </div>
+        <div className="flex-none px-5 pb-5 pt-3">
+          <Button type="button" onClick={() => onImport(text)} className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Importar {count} convidados</Button>
+        </div>
       </section>
     </div>
   );

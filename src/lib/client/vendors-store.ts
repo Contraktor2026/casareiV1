@@ -1,18 +1,26 @@
 "use client";
 
 import type { Vendor } from "@/types/vendors";
+import { getUserId } from "@/lib/client/supabase-auth";
 
-const VENDORS_KEY = "casarei:vendors";
-const PENDING_CATEGORIES_KEY = "casarei:pending-vendor-categories";
+function vendorsKey(): string {
+  const uid = getUserId();
+  return uid ? `casarei:${uid}:vendors` : "casarei:vendors";
+}
+
+function pendingCategoriesKey(): string {
+  const uid = getUserId();
+  return uid ? `casarei:${uid}:pending-vendor-categories` : "casarei:pending-vendor-categories";
+}
 
 export function getStoredVendors(): Vendor[] {
   if (typeof window === "undefined") return [];
-  return readArray<Vendor>(VENDORS_KEY);
+  return readArray<Vendor>(vendorsKey());
 }
 
 export function saveStoredVendors(vendors: Vendor[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(VENDORS_KEY, JSON.stringify(vendors));
+  window.localStorage.setItem(vendorsKey(), JSON.stringify(vendors));
   window.dispatchEvent(new CustomEvent("casarei:vendors-updated"));
 }
 
@@ -24,12 +32,12 @@ export function upsertStoredVendor(vendor: Vendor) {
 
 export function getStoredPendingCategories(): string[] {
   if (typeof window === "undefined") return [];
-  return readArray<string>(PENDING_CATEGORIES_KEY);
+  return readArray<string>(pendingCategoriesKey());
 }
 
 export function saveStoredPendingCategories(categories: string[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(PENDING_CATEGORIES_KEY, JSON.stringify(categories));
+  window.localStorage.setItem(pendingCategoriesKey(), JSON.stringify(categories));
 }
 
 function readArray<T>(key: string): T[] {

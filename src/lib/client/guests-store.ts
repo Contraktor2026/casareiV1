@@ -1,13 +1,17 @@
 "use client";
 
 import type { Guest } from "@/types/guests";
+import { getUserId } from "@/lib/client/supabase-auth";
 
-const GUESTS_KEY = "casarei:guests";
+function guestsKey(): string {
+  const uid = getUserId();
+  return uid ? `casarei:${uid}:guests` : "casarei:guests";
+}
 
 export function getStoredGuests(): Guest[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(GUESTS_KEY);
+    const raw = window.localStorage.getItem(guestsKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -18,6 +22,6 @@ export function getStoredGuests(): Guest[] {
 
 export function saveStoredGuests(guests: Guest[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(GUESTS_KEY, JSON.stringify(guests));
+  window.localStorage.setItem(guestsKey(), JSON.stringify(guests));
   window.dispatchEvent(new CustomEvent("casarei:guests-updated"));
 }
