@@ -1,7 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, CalendarDays, CheckSquare, FileText, Heart, MapPin, Sparkles, Users, Wallet } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarCheck2,
+  CalendarDays,
+  Camera,
+  CheckCircle2,
+  CheckSquare,
+  FileText,
+  Heart,
+  MapPin,
+  Plus,
+  Sparkles,
+  Store,
+  Table2,
+  Users,
+  Wallet
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,61 +25,30 @@ import { getOnboardingData } from "@/lib/client/fake-auth";
 import { mockCouple } from "@/lib/mock/casarei";
 import type { OnboardingData } from "@/types/onboarding";
 
-const countdown = [
-  { value: "142", label: "dias" },
-  { value: "18", label: "horas" },
-  { value: "43", label: "min" },
-  { value: "21", label: "seg" }
-];
-
-const journey = [
-  { icon: Heart, value: "100%", label: "Sonho desenhado" },
-  { icon: Users, value: "72%", label: "Decisões tomadas" },
-  { icon: CheckSquare, value: "64%", label: "Fornecedores certos" },
-  { icon: Heart, value: "58%", label: "Tranquilidade da semana" }
-];
-
-const moduleCards = [
-  {
-    title: "Convidados",
-    icon: Users,
-    value: "87/140",
-    text: "confirmados",
-    detail: "42 pendentes",
-    href: "/app/convidados",
-    cta: "Ver convidados"
-  },
-  {
-    title: "Tarefas",
-    icon: CheckSquare,
-    value: "23/48",
-    text: "concluídas",
-    detail: "8 para esta semana",
-    href: "/app/cronograma",
-    cta: "Ver tarefas"
-  },
-  {
-    title: "Cotações",
-    icon: FileText,
-    value: "3",
-    text: "em comparação",
-    detail: "4 recebidas",
-    href: "/app/cotacoes",
-    cta: "Ver cotações"
-  },
-  {
-    title: "Financeiro",
-    icon: Wallet,
-    value: "62%",
-    text: "do total usado",
-    detail: "R$ 8.420 de R$ 13.500",
-    href: "/app/orcamento",
-    cta: "Ver financeiro"
-  }
-];
-
 const defaultBannerImage = "https://images.unsplash.com/photo-1519741497674-611481863552?w=1400&auto=format&fit=crop";
 const appBannerImageKey = "casarei:app-banner-image";
+
+const quickActions = [
+  { label: "Adicionar convidado", href: "/app/convidados", icon: Users },
+  { label: "Adicionar orçamento", href: "/app/cotacoes", icon: FileText },
+  { label: "Organizar mesas", href: "/app/presenca-mesas/mesas", icon: Table2 },
+  { label: "Nova tarefa", href: "/app/cronograma", icon: CheckSquare }
+];
+
+const mobileModules = [
+  { title: "Convidados", text: "Lista, grupos, contatos e cuidados", href: "/app/convidados", icon: Users, status: "87 cadastrados" },
+  { title: "Confirmações", text: "Enviar RSVP e acompanhar respostas", href: "/app/presenca-mesas", icon: CalendarCheck2, status: "42 pendentes" },
+  { title: "Mesas", text: "Mapa de mesas e convidados sem lugar", href: "/app/presenca-mesas/mesas", icon: Table2, status: "8 sem mesa" },
+  { title: "Fornecedores", text: "Contratos, pagamentos e orçamentos", href: "/app/fornecedores", icon: Store, status: "6 fechados" },
+  { title: "Financeiro", text: "Pagamentos, vencimentos e saldo", href: "/app/orcamento", icon: Wallet, status: "62% usado" },
+  { title: "Tarefas", text: "Agenda mensal e próximos passos", href: "/app/cronograma", icon: CheckSquare, status: "8 esta semana" }
+];
+
+const todayFocus = [
+  { title: "Revisar convidados sem WhatsApp", href: "/app/convidados", tone: "warn" },
+  { title: "Confirmar próximo pagamento", href: "/app/orcamento/pagamentos", tone: "danger" },
+  { title: "Comparar fotografia", href: "/app/cotacoes", tone: "ok" }
+];
 
 export default function DashboardPage() {
   const [bannerImage, setBannerImage] = useState(defaultBannerImage);
@@ -82,7 +67,6 @@ export default function DashboardPage() {
   const guestCount = onboarding?.guestCount || 140;
   const plannedBudget = onboarding?.plannedBudget || "R$ 70-100 mil";
   const firstName = onboarding?.brideName || "Mari";
-  const personalizedBase = buildPersonalizedBase(onboarding);
 
   function uploadBannerImage(file?: File) {
     if (!file) return;
@@ -96,176 +80,148 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-[22px]">
-      <section className="relative grid min-h-[320px] overflow-hidden rounded-[28px] bg-[#f7e4d8] p-6 shadow-[0_20px_50px_rgba(153,53,86,0.12)] md:p-14 lg:grid-cols-[1fr_360px] lg:gap-10 lg:items-center">
+    <div className="mx-auto w-full max-w-[460px] space-y-5 lg:max-w-6xl">
+      <section className="relative overflow-hidden rounded-[28px] bg-[#4B2E2B] p-5 text-white shadow-[0_18px_45px_rgba(75,46,43,0.18)] lg:grid lg:min-h-[360px] lg:grid-cols-[1fr_360px] lg:items-end lg:gap-8 lg:p-8">
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `linear-gradient(90deg, rgba(255,253,249,0.96), rgba(255,253,249,0.75), rgba(255,253,249,0.15)), url('${bannerImage}')`
-          }}
+          className="absolute inset-0 bg-cover bg-center opacity-45"
+          style={{ backgroundImage: `linear-gradient(180deg,rgba(75,46,43,0.2),rgba(75,46,43,0.92)),url('${bannerImage}')` }}
         />
         <div className="relative">
-          <label className="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-xs font-bold text-[#d4537e] shadow-[0_8px_20px_rgba(153,53,86,0.10)] backdrop-blur">
+          <label className="mobile-tap-target mb-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-[#D96C8A] shadow-[0_10px_24px_rgba(0,0,0,0.12)] backdrop-blur">
             <Camera className="h-4 w-4" aria-hidden />
-            Editar foto do banner
+            Editar banner
             <input type="file" accept="image/*" className="sr-only" onChange={(event) => uploadBannerImage(event.target.files?.[0])} />
           </label>
-          <p className="mb-2 text-sm text-[#2a1a1f]">O grande dia de</p>
-          <h1 className="mb-[22px] font-serif text-[40px] font-medium leading-none text-[#2a1a1f] md:text-[58px]">
-            {coupleName} <span className="text-[#d4537e]">♡</span>
+
+          <p className="text-sm text-white/85">O grande dia de</p>
+          <h1 className="mt-1 max-w-[280px] font-serif text-4xl leading-none text-white sm:max-w-none sm:text-5xl">
+            {coupleName}
           </h1>
 
-          <div className="mb-[26px] grid gap-2 text-sm text-[#4e3d42]">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+          <div className="mt-5 grid gap-2 text-sm text-white/88">
+            <p className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" aria-hidden />
               {weddingDate}
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              {mockCouple.venueName}, {city} - {state}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-3 md:flex">
-            {countdown.map((item) => (
-              <div
-                key={item.label}
-                className="grid h-[68px] place-items-center rounded-[14px] border border-white/70 bg-white/70 text-center backdrop-blur md:h-[72px] md:w-[72px]"
-              >
-                <div>
-                  <strong className="block font-serif text-[28px] leading-none text-[#2a1a1f]">{item.value}</strong>
-                  <span className="text-[11px] text-[#7b6a70]">{item.label}</span>
-                </div>
-              </div>
-            ))}
+            </p>
+            <p className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" aria-hidden />
+              {city} - {state}
+            </p>
           </div>
         </div>
 
-        <aside className="relative mt-5 rounded-[22px] border border-white/80 bg-[rgba(255,253,249,0.90)] p-5 shadow-[0_20px_50px_rgba(153,53,86,0.12)] backdrop-blur md:p-[26px] lg:mt-0">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#d4537e]">
+        <aside className="relative mt-5 rounded-[24px] bg-white/94 p-4 text-[#4B2E2B] shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur lg:mt-0">
+          <div className="flex items-center gap-2 text-sm font-bold text-[#D96C8A]">
             <Sparkles className="h-4 w-4" aria-hidden />
             Sofia
           </div>
-          <h2 className="mb-4 font-serif text-[25px] font-medium leading-[1.2] text-[#2a1a1f]">
-            Respira, {firstName}. Você está no caminho certo.
-          </h2>
-          <p className="mb-5 text-sm leading-[1.6] text-[#4d3f44]">
-            Montei uma base inicial para {guestCount} convidados, orçamento {plannedBudget} e fornecedores da região de {city}.
+          <h2 className="mt-2 font-serif text-2xl leading-tight">Respira, {firstName}. O casamento já está tomando forma.</h2>
+          <p className="mt-3 text-sm leading-6 text-[#7B625D]">
+            Base criada para {guestCount} convidados, orçamento {plannedBudget} e fornecedores da região.
           </p>
-          <Button asChild className="rounded-xl bg-[#d4537e] px-5 py-[13px] font-bold text-white hover:bg-[#993556]">
-            <Link href="/app/tarefas">Ver próximos passos</Link>
+          <Button asChild className="mt-4 h-12 w-full rounded-2xl bg-[#D96C8A] font-bold hover:bg-[#C85D7B]">
+            <Link href="/app/cronograma">
+              Ver próximos passos
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
         </aside>
       </section>
 
-      <section className="rounded-[24px] border border-[#e8dcd7] bg-[rgba(255,253,249,0.86)] p-[26px] shadow-[0_10px_30px_rgba(153,53,86,0.06)]">
-        <div className="mb-[22px] grid gap-[18px] md:grid-cols-[1fr_1fr_auto] md:items-center">
-          <div>
-            <h2 className="m-0 font-serif text-2xl font-medium text-[#2a1a1f]">Sua jornada ♡</h2>
-            <p className="mt-1 text-sm text-[#7b6a70]">Seu planejamento está ganhando forma</p>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-[#f3e8e5]">
-            <div className="h-full w-[67%] rounded-full bg-[#d4537e]" />
-          </div>
-          <strong className="text-[#d4537e]">
-            67%
-            <br />
-            <span className="text-xs">concluído</span>
-          </strong>
-        </div>
-
-        <div className="grid gap-[22px] border-t border-[#e8dcd7] pt-[22px] sm:grid-cols-2 xl:grid-cols-4">
-          {journey.map((item) => (
-            <div key={item.label} className="flex items-center gap-[14px]">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-[#fbeaf0] text-[#d4537e]">
-                <item.icon className="h-5 w-5" strokeWidth={1.6} aria-hidden />
-              </div>
-              <div>
-                <strong className="block font-serif text-[28px] font-medium leading-none text-[#2a1a1f]">
-                  {item.value}
-                </strong>
-                <span className="text-xs text-[#7b6a70]">{item.label}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      <section className="grid grid-cols-3 gap-3">
+        <SummaryPill value="142" label="dias" />
+        <SummaryPill value="67%" label="organizado" />
+        <SummaryPill value="R$ 8,4k" label="a pagar" />
       </section>
 
-      <section className="rounded-[24px] border border-[#e8dcd7] bg-white/90 p-[26px] shadow-[0_10px_30px_rgba(153,53,86,0.06)]">
-        <div className="mb-5">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#d4537e]">Base inicial do casamento</p>
-          <h2 className="mt-1 font-serif text-2xl font-medium text-[#2a1a1f]">O Casarei já começou a organizar por você</h2>
-          <p className="mt-1 text-sm leading-6 text-[#7b6a70]">
-            Criamos uma primeira estrutura com tarefas, categorias financeiras, fornecedores sugeridos e cronograma para o perfil informado no onboarding.
-          </p>
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-serif text-2xl text-[#4B2E2B]">Ações rápidas</h2>
+          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">mobile-first</span>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {personalizedBase.map((item) => (
-            <Link key={item.title} href={item.href} className="rounded-[20px] border border-[#e8dcd7] bg-[#fff8f4] p-4 transition hover:border-[#f0c5d2] hover:bg-[#fff2f6]">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8a716d]">{item.label}</p>
-              <h3 className="mt-2 font-serif text-xl text-[#4b1528]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[#6f5b57]">{item.text}</p>
+        <div className="grid grid-cols-2 gap-3">
+          {quickActions.map((action) => (
+            <Link key={action.label} href={action.href} className="mobile-tap-target rounded-[20px] bg-white p-4 text-[#4B2E2B] shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
+                <action.icon className="h-5 w-5" />
+              </span>
+              <span className="mt-3 block text-sm font-bold leading-5">{action.label}</span>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="grid gap-[18px] md:grid-cols-2 xl:grid-cols-4">
-        {moduleCards.map((card) => (
-          <article
-            key={card.title}
-            className="relative min-h-[210px] rounded-[22px] border border-[#e8dcd7] bg-[rgba(255,253,249,0.94)] p-6 shadow-[0_12px_30px_rgba(153,53,86,0.06)]"
-          >
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-[#fbeaf0] text-[#d4537e]">
-                <card.icon className="h-4 w-4" strokeWidth={1.6} aria-hidden />
-              </span>
-              <h3 className="m-0 font-serif text-[22px] font-medium text-[#2a1a1f]">{card.title}</h3>
-            </div>
-            <div className="mt-[18px] font-serif text-[38px] leading-none text-[#2a1a1f]">{card.value}</div>
-            <p className="mt-2 text-sm leading-[1.4] text-[#7b6a70]">
-              {card.text}
-              <br />
-              {card.detail}
-            </p>
-            <Button asChild variant="outline" className="mt-4 rounded-xl border-[#f0c5d2] bg-[#fff7f9] font-bold text-[#d4537e] hover:bg-[#fbeaf0]">
-              <Link href={card.href}>{card.cta}</Link>
-            </Button>
-          </article>
-        ))}
+      <section className="rounded-[24px] bg-white p-5 shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Hoje</p>
+            <h2 className="mt-1 font-serif text-2xl text-[#4B2E2B]">Prioridades para avançar</h2>
+          </div>
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EEF3EA] text-[#5F7752]">
+            <CheckCircle2 className="h-5 w-5" />
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3">
+          {todayFocus.map((item) => (
+            <Link key={item.title} href={item.href} className="flex min-h-[58px] items-center gap-3 rounded-2xl bg-[#F8F4F1] px-4 py-3">
+              <span className={`h-2.5 w-2.5 rounded-full ${focusTone(item.tone)}`} />
+              <span className="flex-1 text-sm font-bold text-[#4B2E2B]">{item.title}</span>
+              <ArrowRight className="h-4 w-4 text-[#8A716D]" />
+            </Link>
+          ))}
+        </div>
       </section>
 
-      <section className="flex items-center gap-[22px] rounded-[22px] border border-[#e8dcd7] bg-[linear-gradient(90deg,#fff2f5,#fffaf7)] px-8 py-6">
-        <Heart className="h-7 w-7 shrink-0 text-[#d4537e]" strokeWidth={1.6} aria-hidden />
-        <div>
-          <h3 className="m-0 font-serif text-[22px] font-medium text-[#2a1a1f]">
-            Cada pequeno passo aproxima vocês do grande dia.
-          </h3>
-          <p className="m-0 mt-1 text-sm text-[#7b6a70]">Você não está sozinha. Eu estou aqui por você! ♡</p>
+      <section>
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8A716D]">Casamento</p>
+            <h2 className="font-serif text-2xl text-[#4B2E2B]">Módulos principais</h2>
+          </div>
+          <Plus className="h-5 w-5 text-[#D96C8A]" />
         </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {mobileModules.map((module) => (
+            <Link key={module.title} href={module.href} className="flex min-h-[86px] items-center gap-3 rounded-[22px] bg-white p-4 shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
+                <module.icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-sm text-[#4B2E2B]">{module.title}</strong>
+                <span className="mt-1 block text-xs leading-5 text-[#8A716D]">{module.text}</span>
+              </span>
+              <span className="rounded-full bg-[#F8F4F1] px-3 py-1 text-[11px] font-bold text-[#7B625D]">{module.status}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[24px] bg-[linear-gradient(135deg,#FFF8F4,#F8E7EC)] p-5 text-[#4B2E2B] ring-1 ring-[#EEE6E1]">
+        <Heart className="h-6 w-6 text-[#D96C8A]" aria-hidden />
+        <h2 className="mt-3 font-serif text-2xl">Cada pequeno passo aproxima vocês do grande dia.</h2>
+        <p className="mt-2 text-sm leading-6 text-[#7B625D]">O app agora prioriza o uso no celular: ações visíveis, módulos fáceis de tocar e conteúdo organizado em blocos curtos.</p>
       </section>
     </div>
   );
+}
+
+function SummaryPill({ value, label }: { value: string; label: string }) {
+  return (
+    <article className="rounded-[20px] bg-white p-4 text-center shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+      <strong className="block font-serif text-2xl leading-none text-[#4B2E2B]">{value}</strong>
+      <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A716D]">{label}</span>
+    </article>
+  );
+}
+
+function focusTone(tone: string) {
+  if (tone === "danger") return "bg-[#D96C8A]";
+  if (tone === "warn") return "bg-[#D28B6E]";
+  return "bg-[#9CAF88]";
 }
 
 function formatWeddingDate(date: string) {
   const parsed = new Date(`${date}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return date;
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(parsed);
-}
-
-function buildPersonalizedBase(data: OnboardingData | null) {
-  const city = data?.city || "sua cidade";
-  const guests = data?.guestCount || 140;
-  const budget = data?.plannedBudget || "orçamento inicial";
-  const priorities = data?.priorities?.length ? data.priorities.slice(0, 2).join(" e ") : "fotografia e gastronomia";
-  const vendors = data?.vendorTypes?.length ? data.vendorTypes.slice(0, 4).join(", ") : "Buffet, fotografia, espaço e decoração";
-  const format = data?.weddingFormat || "casamento";
-
-  return [
-    { label: "Tarefas", title: "Primeiros passos sugeridos", text: `Cronograma inicial para ${format}: confirmar local, revisar lista e priorizar fornecedores.`, href: "/app/cronograma" },
-    { label: "Financeiro", title: `Categorias para ${budget}`, text: `${vendors} já aparecem como categorias editáveis.`, href: "/app/orcamento" },
-    { label: "Fornecedores", title: `Sugestões em ${city}`, text: `A busca deve priorizar região, disponibilidade, categoria e faixa de orçamento. Prioridade: ${priorities}.`, href: "/app/fornecedores" },
-    { label: "Convidados", title: `${guests} convidados estimados`, text: "A estrutura inicial separa grupos, contatos pendentes e cuidados para buffet.", href: "/app/convidados" }
-  ];
 }
