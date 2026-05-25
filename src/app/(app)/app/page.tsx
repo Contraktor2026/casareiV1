@@ -3,228 +3,308 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  CalendarCheck2,
   CalendarDays,
-  Camera,
-  CheckCircle2,
   CheckSquare,
-  FileText,
-  Heart,
+  ChevronRight,
   MapPin,
-  Plus,
   Sparkles,
   Store,
-  Table2,
   Users,
-  Wallet
+  Wallet,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { getOnboardingData, getSession } from "@/lib/client/supabase-auth";
+import { getStoredGuests } from "@/lib/client/guests-store";
+import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
 
-const defaultBannerImage = "https://images.unsplash.com/photo-1519741497674-611481863552?w=1400&auto=format&fit=crop";
-const appBannerImageKey = "casarei:app-banner-image";
-
-const quickActions = [
-  { label: "Adicionar convidado", href: "/app/convidados", icon: Users },
-  { label: "Adicionar orçamento", href: "/app/cotacoes", icon: FileText },
-  { label: "Organizar mesas", href: "/app/presenca-mesas/mesas", icon: Table2 },
-  { label: "Nova tarefa", href: "/app/cronograma", icon: CheckSquare }
+const SOFIA_MESSAGES = [
+  "Cada decisão tomada hoje é um passo a menos pra se preocupar depois. Você está indo bem.",
+  "Casar não é só organizar uma festa — é construir uma memória que vai durar para sempre.",
+  "Respira fundo. O casamento dos seus sonhos está tomando forma, um detalhe de cada vez.",
+  "Você não precisa resolver tudo hoje. O que importa é continuar avançando.",
+  "Lembra do porquê você está fazendo isso. O resto é detalhe.",
 ];
 
-const modules = [
-  { title: "Convidados", text: "Lista, grupos, contatos e cuidados", href: "/app/convidados", icon: Users, status: "Começar" },
-  { title: "Confirmações", text: "Enviar RSVP e acompanhar respostas", href: "/app/presenca-mesas", icon: CalendarCheck2, status: "Configurar" },
-  { title: "Mesas", text: "Mapa de mesas e convidados sem lugar", href: "/app/presenca-mesas/mesas", icon: Table2, status: "Organizar" },
-  { title: "Fornecedores", text: "Contratos, pagamentos e orçamentos", href: "/app/fornecedores", icon: Store, status: "Adicionar" },
-  { title: "Financeiro", text: "Pagamentos, vencimentos e saldo", href: "/app/orcamento", icon: Wallet, status: "Planejar" },
-  { title: "Tarefas", text: "Agenda mensal e próximos passos", href: "/app/cronograma", icon: CheckSquare, status: "Criar" }
+const QUICK_ACTIONS = [
+  { label: "Convidados", href: "/app/convidados", icon: Users, color: "#EEF1F4", iconColor: "#6E7F91" },
+  { label: "Fornecedores", href: "/app/fornecedores", icon: Store, color: "#EEF3EA", iconColor: "#5F7752" },
+  { label: "Financeiro", href: "/app/orcamento", icon: Wallet, color: "#F8E7EC", iconColor: "#D96C8A" },
+  { label: "Agenda", href: "/app/cronograma", icon: CheckSquare, color: "#FBEEE8", iconColor: "#B96F52" },
 ];
 
-const starterFocus = [
-  { title: "Preencher os dados do casamento", href: "/onboarding", tone: "ok" },
-  { title: "Adicionar os primeiros convidados", href: "/app/convidados", tone: "warn" },
-  { title: "Cadastrar fornecedores e orçamentos", href: "/app/fornecedores", tone: "danger" }
+const STARTER_STEPS = [
+  { label: "Preencher dados do casamento", href: "/onboarding", done: false },
+  { label: "Adicionar primeiros convidados", href: "/app/convidados", done: false },
+  { label: "Cadastrar fornecedores", href: "/app/fornecedores", done: false },
+  { label: "Definir orçamento", href: "/app/orcamento", done: false },
 ];
+
+function getDaysLeft(dateStr: string | undefined): number | null {
+  if (!dateStr) return null;
+  const wedding = new Date(`${dateStr}T12:00:00`);
+  const today = new Date();
+  const diff = Math.ceil((wedding.getTime() - today.getTime()) / 86_400_000);
+  return Math.max(0, diff);
+}
+
+function formatDate(dateStr: string): string {
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(
+    new Date(`${dateStr}T12:00:00`)
+  );
+}
 
 export default function DashboardPage() {
-  const [bannerImage, setBannerImage] = useState(defaultBannerImage);
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
+  const [guestCount, setGuestCount] = useState(0);
+  const [vendorCount, setVendorCount] = useState(0);
 
   useEffect(() => {
-    const storedImage = window.localStorage.getItem(appBannerImageKey);
-    if (storedImage) setBannerImage(storedImage);
     setOnboarding(getOnboardingData());
+    setGuestCount(getStoredGuests().length);
+    setVendorCount(getStoredVendors().length);
   }, []);
 
   const session = typeof window !== "undefined" ? getSession() : null;
-  const coupleName = onboarding?.brideName && onboarding?.partnerName ? `${onboarding.brideName} & ${onboarding.partnerName}` : "Seu casamento";
-  const weddingDate = onboarding?.weddingDate ? formatWeddingDate(onboarding.weddingDate) : "Data a definir";
-  const city = onboarding?.city || "Cidade";
-  const state = onboarding?.state || "UF";
-  const guestCount = onboarding?.guestCount || 0;
-  const plannedBudget = onboarding?.plannedBudget || "orçamento a definir";
-  const firstName = onboarding?.brideName || String(session?.user?.user_metadata?.full_name ?? "").split(" ")[0] || "olá";
-  const hasWeddingBasics = Boolean(onboarding?.brideName || onboarding?.partnerName || onboarding?.weddingDate);
+  const firstName =
+    onboarding?.brideName ||
+    String(session?.user?.user_metadata?.full_name ?? "").split(" ")[0] ||
+    "você";
 
-  function uploadBannerImage(file?: File) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? "");
-      setBannerImage(result);
-      window.localStorage.setItem(appBannerImageKey, result);
-    };
-    reader.readAsDataURL(file);
-  }
+  const daysLeft = getDaysLeft(onboarding?.weddingDate);
+  const weddingDate = onboarding?.weddingDate ? formatDate(onboarding.weddingDate) : null;
+  const city = onboarding?.city || null;
+  const state = onboarding?.state || null;
+  const hasBasics = Boolean(onboarding?.weddingDate || onboarding?.brideName);
+
+  const sofiaMessage = useMemo(() => {
+    const idx = new Date().getDay() % SOFIA_MESSAGES.length;
+    return SOFIA_MESSAGES[idx];
+  }, []);
+
+  const stepsCompleted = [
+    hasBasics,
+    guestCount > 0,
+    vendorCount > 0,
+    Boolean(onboarding?.plannedBudget),
+  ].filter(Boolean).length;
+
+  const progressPct = Math.round((stepsCompleted / STARTER_STEPS.length) * 100);
 
   return (
-    <div className="mx-auto w-full max-w-[460px] space-y-5 lg:max-w-6xl">
-      <section className="relative overflow-hidden rounded-[28px] bg-[#4B2E2B] p-5 text-white shadow-[0_18px_45px_rgba(75,46,43,0.18)] lg:grid lg:min-h-[360px] lg:grid-cols-[1fr_360px] lg:items-end lg:gap-8 lg:p-8">
+    <div className="space-y-4">
+
+      {/* ── Hero: countdown ── */}
+      <section
+        className="relative overflow-hidden rounded-[24px] p-6 text-white"
+        style={{ background: "linear-gradient(145deg, #4B2E2B 0%, #2E1A18 100%)" }}
+      >
+        {/* Glow decorativo */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-45"
-          style={{ backgroundImage: `linear-gradient(180deg,rgba(75,46,43,0.2),rgba(75,46,43,0.92)),url('${bannerImage}')` }}
+          className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #D96C8A, transparent)" }}
         />
-        <div className="relative">
-          <label className="mobile-tap-target mb-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-[#D96C8A] shadow-[0_10px_24px_rgba(0,0,0,0.12)] backdrop-blur">
-            <Camera className="h-4 w-4" aria-hidden />
-            Editar banner
-            <input type="file" accept="image/*" className="sr-only" onChange={(event) => uploadBannerImage(event.target.files?.[0])} />
-          </label>
 
-          <p className="text-sm text-white/85">O grande dia de</p>
-          <h1 className="mt-1 max-w-[280px] font-serif text-4xl leading-none text-white sm:max-w-none sm:text-5xl">
-            {coupleName}
-          </h1>
-
-          <div className="mt-5 grid gap-2 text-sm text-white/88">
-            <p className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" aria-hidden />
-              {weddingDate}
-            </p>
-            <p className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" aria-hidden />
-              {city} - {state}
+        {daysLeft !== null ? (
+          <div className="text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">falta</p>
+            <div className="mt-0.5 font-serif text-[80px] font-light leading-none tracking-tight">
+              {daysLeft}
+            </div>
+            <p className="text-sm font-medium text-white/65">
+              {daysLeft === 1 ? "dia" : "dias"}
             </p>
           </div>
-        </div>
-
-        <aside className="relative mt-5 rounded-[24px] bg-white/94 p-4 text-[#4B2E2B] shadow-[0_18px_45px_rgba(0,0,0,0.12)] backdrop-blur lg:mt-0">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#D96C8A]">
-            <Sparkles className="h-4 w-4" aria-hidden />
-            Sofia
-          </div>
-          <h2 className="mt-2 font-serif text-2xl leading-tight">Oi, {firstName}. Vamos organizar seu casamento do zero.</h2>
-          <p className="mt-3 text-sm leading-6 text-[#7B625D]">
-            {hasWeddingBasics
-              ? `Planejamento iniciado para ${guestCount || "seus"} convidados, com ${plannedBudget}.`
-              : "Preencha as primeiras informações para liberar uma jornada personalizada."}
-          </p>
-          <Button asChild className="mt-4 h-12 w-full rounded-2xl bg-[#D96C8A] font-bold hover:bg-[#C85D7B]">
-            <Link href={hasWeddingBasics ? "/app/cronograma" : "/onboarding"}>
-              {hasWeddingBasics ? "Ver próximos passos" : "Preencher dados iniciais"}
-              <ArrowRight className="h-4 w-4" />
+        ) : (
+          <div className="text-center">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-white/10">
+              <CalendarDays className="h-7 w-7 text-white/70" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-white/80">Data do casamento não definida</p>
+            <Link
+              href="/onboarding"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
+            >
+              Definir data <ArrowRight className="h-3.5 w-3.5" />
             </Link>
-          </Button>
-        </aside>
-      </section>
+          </div>
+        )}
 
-      <section className="grid grid-cols-3 gap-3">
-        <SummaryPill value={onboarding?.weddingDate ? "Definida" : "A definir"} label="data" />
-        <SummaryPill value="0%" label="organizado" />
-        <SummaryPill value="R$ 0" label="a pagar" />
-      </section>
-
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-serif text-2xl text-[#4B2E2B]">Ações rápidas</h2>
-          <span className="rounded-full bg-[#F8E7EC] px-3 py-1 text-[11px] font-bold text-[#D96C8A]">comece aqui</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {quickActions.map((action) => (
-            <Link key={action.label} href={action.href} className="mobile-tap-target rounded-[20px] bg-white p-4 text-[#4B2E2B] shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
-                <action.icon className="h-5 w-5" />
+        {(weddingDate || city) && (
+          <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-white/60">
+            {weddingDate && (
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {weddingDate}
               </span>
-              <span className="mt-3 block text-sm font-bold leading-5">{action.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-[24px] bg-white p-5 shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Hoje</p>
-            <h2 className="mt-1 font-serif text-2xl text-[#4B2E2B]">Primeiros passos</h2>
+            )}
+            {city && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {city}{state ? `, ${state}` : ""}
+              </span>
+            )}
           </div>
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#EEF3EA] text-[#5F7752]">
-            <CheckCircle2 className="h-5 w-5" />
-          </span>
-        </div>
-        <div className="mt-4 grid gap-3">
-          {starterFocus.map((item) => (
-            <Link key={item.title} href={item.href} className="flex min-h-[58px] items-center gap-3 rounded-2xl bg-[#F8F4F1] px-4 py-3">
-              <span className={`h-2.5 w-2.5 rounded-full ${focusTone(item.tone)}`} />
-              <span className="flex-1 text-sm font-bold text-[#4B2E2B]">{item.title}</span>
-              <ArrowRight className="h-4 w-4 text-[#8A716D]" />
-            </Link>
-          ))}
+        )}
+
+        {/* Sofia card dentro do hero */}
+        <div className="mt-5 rounded-[18px] bg-white/10 p-4 backdrop-blur-sm">
+          <div className="flex items-start gap-3">
+            <div
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full"
+              style={{ background: "linear-gradient(135deg, #D96C8A, #B85070)" }}
+            >
+              <Sparkles className="h-4 w-4 text-white" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-white/50 uppercase tracking-wide">Sofia</p>
+              <p className="mt-0.5 text-sm leading-[1.55] text-white/85">
+                Oi, {firstName}. {sofiaMessage}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* ── Stats rápidas ── */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatPill value={String(guestCount)} label="convidados" />
+        <StatPill value={`${progressPct}%`} label="organizado" />
+        <StatPill value={String(vendorCount)} label="fornecedores" />
+      </div>
+
+      {/* ── Acesso rápido ── */}
       <section>
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8A716D]">Casamento</p>
-            <h2 className="font-serif text-2xl text-[#4B2E2B]">Módulos principais</h2>
-          </div>
-          <Plus className="h-5 w-5 text-[#D96C8A]" />
+        <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Acesso rápido</h2>
+        <div className="grid grid-cols-4 gap-2">
+          {QUICK_ACTIONS.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="flex flex-col items-center gap-2 rounded-[18px] bg-white p-3 ring-1 ring-[#EEE6E1] transition active:scale-[0.97]"
+              style={{ boxShadow: "0 4px 16px rgba(75,46,43,0.05)" }}
+            >
+              <span
+                className="grid h-10 w-10 place-items-center rounded-[14px]"
+                style={{ background: action.color }}
+              >
+                <action.icon className="h-5 w-5" style={{ color: action.iconColor }} strokeWidth={1.8} />
+              </span>
+              <span className="text-[10px] font-bold leading-tight text-[#4B2E2B] text-center">
+                {action.label}
+              </span>
+            </Link>
+          ))}
         </div>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {modules.map((module) => (
-            <Link key={module.title} href={module.href} className="flex min-h-[86px] items-center gap-3 rounded-[22px] bg-white p-4 shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
-                <module.icon className="h-5 w-5" />
+      </section>
+
+      {/* ── Primeiros passos ── */}
+      {progressPct < 100 && (
+        <section
+          className="rounded-[20px] bg-white p-5 ring-1 ring-[#EEE6E1]"
+          style={{ boxShadow: "0 4px 20px rgba(75,46,43,0.06)" }}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Primeiros passos</p>
+              <h2 className="mt-0.5 font-serif text-xl text-[#4B2E2B]">
+                {stepsCompleted} de {STARTER_STEPS.length} feitos
+              </h2>
+            </div>
+            <div className="relative h-11 w-11">
+              <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#F0E8E4" strokeWidth="4" />
+                <circle
+                  cx="22" cy="22" r="18"
+                  fill="none"
+                  stroke="#D96C8A"
+                  strokeWidth="4"
+                  strokeDasharray={`${2 * Math.PI * 18}`}
+                  strokeDashoffset={`${2 * Math.PI * 18 * (1 - progressPct / 100)}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#D96C8A]">
+                {progressPct}%
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#F0E8E4]">
+            <div
+              className="h-full rounded-full bg-[#D96C8A] transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {STARTER_STEPS.map((step, i) => {
+              const done = i < stepsCompleted;
+              return (
+                <Link
+                  key={step.href}
+                  href={step.href}
+                  className="flex items-center gap-3 rounded-[14px] px-3 py-3 transition active:bg-[#F8F4F1]"
+                >
+                  <span
+                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${done ? "bg-[#D96C8A] text-white" : "bg-[#F0E8E4] text-[#8A716D]"}`}
+                  >
+                    {done ? "✓" : i + 1}
+                  </span>
+                  <span className={`flex-1 text-sm font-semibold ${done ? "text-[#9E8880] line-through" : "text-[#4B2E2B]"}`}>
+                    {step.label}
+                  </span>
+                  {!done && <ChevronRight className="h-4 w-4 text-[#C4B0AA]" />}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Módulos ── */}
+      <section>
+        <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Módulos</h2>
+        <div className="space-y-2">
+          {[
+            { title: "Convidados", sub: "Lista, grupos, RSVP e mesas", href: "/app/convidados", icon: Users },
+            { title: "Fornecedores", sub: "Contratos, pagamentos e cotações", href: "/app/fornecedores", icon: Store },
+            { title: "Financeiro", sub: "Orçamento, categorias e projeções", href: "/app/orcamento", icon: Wallet },
+            { title: "Agenda", sub: "Cronograma mensal e tarefas", href: "/app/cronograma", icon: CheckSquare },
+          ].map((mod) => (
+            <Link
+              key={mod.href}
+              href={mod.href}
+              className="flex items-center gap-3 rounded-[18px] bg-white px-4 py-4 ring-1 ring-[#EEE6E1] transition active:scale-[0.99]"
+              style={{ boxShadow: "0 2px 12px rgba(75,46,43,0.04)" }}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#F8E7EC]">
+                <mod.icon className="h-5 w-5 text-[#D96C8A]" strokeWidth={1.7} />
               </span>
               <span className="min-w-0 flex-1">
-                <strong className="block text-sm text-[#4B2E2B]">{module.title}</strong>
-                <span className="mt-1 block text-xs leading-5 text-[#8A716D]">{module.text}</span>
+                <strong className="block text-sm text-[#4B2E2B]">{mod.title}</strong>
+                <span className="mt-0.5 block text-xs text-[#8A716D]">{mod.sub}</span>
               </span>
-              <span className="rounded-full bg-[#F8F4F1] px-3 py-1 text-[11px] font-bold text-[#7B625D]">{module.status}</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#C4B0AA]" />
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[24px] bg-[linear-gradient(135deg,#FFF8F4,#F8E7EC)] p-5 text-[#4B2E2B] ring-1 ring-[#EEE6E1]">
-        <Heart className="h-6 w-6 text-[#D96C8A]" aria-hidden />
-        <h2 className="mt-3 font-serif text-2xl">Cada pequeno passo aproxima vocês do grande dia.</h2>
-        <p className="mt-2 text-sm leading-6 text-[#7B625D]">Comece cadastrando apenas o essencial. O restante pode ser organizado aos poucos, módulo por módulo.</p>
-      </section>
     </div>
   );
 }
 
-function SummaryPill({ value, label }: { value: string; label: string }) {
+function StatPill({ value, label }: { value: string; label: string }) {
   return (
-    <article className="rounded-[20px] bg-white p-4 text-center shadow-[0_12px_30px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-      <strong className="block font-serif text-2xl leading-none text-[#4B2E2B]">{value}</strong>
-      <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8A716D]">{label}</span>
+    <article
+      className="rounded-[16px] bg-white px-3 py-3 text-center ring-1 ring-[#EEE6E1]"
+      style={{ boxShadow: "0 2px 10px rgba(75,46,43,0.05)" }}
+    >
+      <strong className="block font-serif text-[22px] leading-none text-[#4B2E2B]">{value}</strong>
+      <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.06em] text-[#8A716D]">{label}</span>
     </article>
   );
-}
-
-function focusTone(tone: string) {
-  if (tone === "danger") return "bg-[#D96C8A]";
-  if (tone === "warn") return "bg-[#D28B6E]";
-  return "bg-[#9CAF88]";
-}
-
-function formatWeddingDate(date: string) {
-  const parsed = new Date(`${date}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) return date;
-  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(parsed);
 }

@@ -2,45 +2,87 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckSquare, Home, Menu, Store, Users } from "lucide-react";
+import { CalendarDays, Home, Sparkles, Users, Wallet } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const items = [
-  { href: "/app", label: "Inicio", icon: Home, match: ["/app"] },
-  { href: "/app/cronograma", label: "Tarefas", icon: CheckSquare, match: ["/app/cronograma", "/app/tarefas"] },
+const LEFT_TABS = [
+  { href: "/app", label: "Início", icon: Home, match: ["/app"] },
+  {
+    href: "/app/cronograma",
+    label: "Agenda",
+    icon: CalendarDays,
+    match: ["/app/cronograma", "/app/tarefas", "/app/timeline", "/app/inspiracoes"],
+  },
+];
+
+const RIGHT_TABS = [
   {
     href: "/app/convidados",
     label: "Convidados",
     icon: Users,
-    match: ["/app/convidados", "/app/presenca-mesas"]
+    match: ["/app/convidados", "/app/presenca-mesas"],
   },
-  { href: "/app/fornecedores", label: "Fornecedores", icon: Store, match: ["/app/fornecedores", "/app/cotacoes"] },
-  { href: "/app/sofia", label: "Mais", icon: Menu, match: ["/app/sofia", "/app/orcamento", "/app/inspiracoes"] }
+  {
+    href: "/app/orcamento",
+    label: "Conta",
+    icon: Wallet,
+    match: ["/app/orcamento", "/app/fornecedores", "/app/cotacoes"],
+  },
 ];
+
+function isTabActive(pathname: string, match: string[]) {
+  return match.some(
+    (href) => pathname === href || (href !== "/app" && pathname.startsWith(href))
+  );
+}
 
 export function BottomNavigation() {
   const pathname = usePathname();
+  const sofiaActive = pathname.startsWith("/app/sofia");
 
   return (
-    <nav className="mobile-bottom-nav" aria-label="Navegacao principal">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const isActive = item.match.some((href) => pathname === href || (href !== "/app" && pathname.startsWith(href)));
-
+    <nav className="app-bottom-nav" aria-label="Navegação principal">
+      {/* Esquerda */}
+      {LEFT_TABS.map((tab) => {
+        const Icon = tab.icon;
+        const active = isTabActive(pathname, tab.match);
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "mobile-bottom-item",
-              isActive && "text-[#D96C8A] [&_span:first-child]:bg-[#F8E7EC] [&_span:first-child]:text-[#D96C8A]"
-            )}
-          >
-            <span>
-              <Icon className="h-[19px] w-[19px]" strokeWidth={1.7} aria-hidden />
+          <Link key={tab.href} href={tab.href} className="nav-tab" aria-label={tab.label}>
+            <Icon
+              className={cn("h-[22px] w-[22px] transition-colors", active ? "text-[#D96C8A]" : "text-[#9E8880]")}
+              strokeWidth={active ? 2.1 : 1.6}
+            />
+            <span className={cn("text-[10px] font-semibold leading-none tracking-tight", active ? "text-[#D96C8A]" : "text-[#9E8880]")}>
+              {tab.label}
             </span>
-            <strong>{item.label}</strong>
+          </Link>
+        );
+      })}
+
+      {/* Sofia — centro elevado */}
+      <Link href="/app/sofia" className="nav-sofia" aria-label="Sofia">
+        <div className={cn("sofia-btn", sofiaActive && "scale-105")}>
+          <Sparkles className="h-[22px] w-[22px]" strokeWidth={1.8} />
+        </div>
+        <span className={cn("text-[10px] font-semibold leading-none tracking-tight", sofiaActive ? "text-[#D96C8A]" : "text-[#9E8880]")}>
+          Sofia
+        </span>
+      </Link>
+
+      {/* Direita */}
+      {RIGHT_TABS.map((tab) => {
+        const Icon = tab.icon;
+        const active = isTabActive(pathname, tab.match);
+        return (
+          <Link key={tab.href} href={tab.href} className="nav-tab" aria-label={tab.label}>
+            <Icon
+              className={cn("h-[22px] w-[22px] transition-colors", active ? "text-[#D96C8A]" : "text-[#9E8880]")}
+              strokeWidth={active ? 2.1 : 1.6}
+            />
+            <span className={cn("text-[10px] font-semibold leading-none tracking-tight", active ? "text-[#D96C8A]" : "text-[#9E8880]")}>
+              {tab.label}
+            </span>
           </Link>
         );
       })}

@@ -4,14 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   Camera,
   CakeSlice,
   ChevronLeft,
   ChevronRight,
   Filter,
   Heart,
-  Menu,
   MessageCircle,
   Music,
   Palette,
@@ -199,8 +197,15 @@ export function VendorsPage() {
 
   if (pendingDetail) {
     return (
-      <MobileFrame>
-        <TopBar title={pendingDetail} onBack={() => setPendingDetail(null)} />
+      <div className="space-y-4 pb-4">
+        <button
+          type="button"
+          onClick={() => setPendingDetail(null)}
+          className="flex items-center gap-1.5 text-sm font-semibold text-[#D96C8A]"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Fornecedores
+        </button>
         <PendingDetail
           category={pendingDetail}
           onAdd={() => openVendorForm("Cotando", normalizeVendorCategory(pendingDetail))}
@@ -210,89 +215,53 @@ export function VendorsPage() {
           }}
         />
         {renderModals()}
-      </MobileFrame>
+      </div>
     );
   }
 
   return (
-    <>
-      <div>
-        <MobileFrame>
-          <TopBar title={activeTab === "Ainda cotando" ? "Ainda cotando" : "Fornecedores"} />
-          <TabBar active={activeTab} onChange={setActiveTab} />
-          {message ? <p className="mb-3 rounded-2xl bg-[#EEF3EA] px-4 py-3 text-xs font-semibold text-[#4B2E2B]">{message}</p> : null}
-          {activeTab === "Já fechados" ? (
-            <ClosedTab
-              vendors={closedVendors}
-              attentionVendors={attentionVendors}
-              pendingCount={pendingCategories.length}
-              onInvite={() => openVendorForm("Fechado")}
-              onGoPending={() => setActiveTab("Faltam contratar")}
-            />
-          ) : null}
-          {activeTab === "Ainda cotando" ? (
-            <QuotesTab
-              categories={quoteCategories}
-              proposals={proposals}
-              onCompare={setSofiaCategory}
-              selectedCategory={quoteDetailCategory}
-              onOpenCategory={setQuoteDetailCategory}
-              onCloseCategory={() => setQuoteDetailCategory(null)}
-              onAddQuote={goToQuotes}
-              onPending={(category) => {
-                setPendingDetail(category);
-              }}
-            />
-          ) : null}
-          {activeTab === "Faltam contratar" ? (
-            <PendingTab
-              categories={pendingCategories}
-              onOpen={setPendingDetail}
-              onAddCategory={() => setShowPendingCategoryForm(true)}
-              onDeleteCategory={deletePendingCategory}
-            />
-          ) : null}
-          {activeTab === "Todos" ? (
-            <AllTab
-              vendors={allVendors}
-              query={query}
-              onQuery={setQuery}
-              onFilter={() => setShowFilter(true)}
-            />
-          ) : null}
-        </MobileFrame>
-      </div>
-
-      <div className="hidden">
-        <DesktopVendors
-          activeTab={activeTab}
-          onTab={setActiveTab}
-          message={message}
-          closedVendors={closedVendors}
-          quoteCategories={quoteCategories}
-          proposals={proposals}
-          pendingCategories={pendingCategories}
+    <div className="space-y-4 pb-4">
+      <TabBar active={activeTab} onChange={setActiveTab} />
+      {message ? <p className="rounded-2xl bg-[#EEF3EA] px-4 py-3 text-xs font-semibold text-[#4B2E2B]">{message}</p> : null}
+      {activeTab === "Já fechados" ? (
+        <ClosedTab
+          vendors={closedVendors}
           attentionVendors={attentionVendors}
-          allVendors={allVendors}
+          pendingCount={pendingCategories.length}
+          onInvite={() => openVendorForm("Fechado")}
+          onGoPending={() => setActiveTab("Faltam contratar")}
+        />
+      ) : null}
+      {activeTab === "Ainda cotando" ? (
+        <QuotesTab
+          categories={quoteCategories}
+          proposals={proposals}
+          onCompare={setSofiaCategory}
+          selectedCategory={quoteDetailCategory}
+          onOpenCategory={setQuoteDetailCategory}
+          onCloseCategory={() => setQuoteDetailCategory(null)}
+          onAddQuote={goToQuotes}
+          onPending={setPendingDetail}
+        />
+      ) : null}
+      {activeTab === "Faltam contratar" ? (
+        <PendingTab
+          categories={pendingCategories}
+          onOpen={setPendingDetail}
+          onAddCategory={() => setShowPendingCategoryForm(true)}
+          onDeleteCategory={deletePendingCategory}
+        />
+      ) : null}
+      {activeTab === "Todos" ? (
+        <AllTab
+          vendors={allVendors}
           query={query}
           onQuery={setQuery}
-          quoteDetailCategory={quoteDetailCategory}
-          onQuoteDetail={setQuoteDetailCategory}
-          onCloseQuoteDetail={() => setQuoteDetailCategory(null)}
-          onAddBudget={goToQuotes}
-          onAddCategoryBudget={goToQuotes}
-          onAddClosed={() => openVendorForm("Fechado")}
-          onAddVendor={() => openVendorForm("Cotando")}
-          onCompare={setSofiaCategory}
-          onPendingDetail={setPendingDetail}
-          onAddPendingCategory={() => setShowPendingCategoryForm(true)}
-          onAddPendingVendor={(category) => openVendorForm("Cotando", normalizeVendorCategory(category))}
-          onDeletePendingCategory={deletePendingCategory}
           onFilter={() => setShowFilter(true)}
         />
-      </div>
+      ) : null}
       {renderModals()}
-    </>
+    </div>
   );
 
   function renderModals() {
@@ -357,223 +326,6 @@ export function VendorsPage() {
   }
 }
 
-function MobileFrame({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11">
-      <div className="mx-auto w-full max-w-[460px]">{children}</div>
-    </div>
-  );
-}
-
-function DesktopVendors({
-  activeTab,
-  onTab,
-  message,
-  closedVendors,
-  quoteCategories,
-  quoteDetailCategory,
-  proposals,
-  pendingCategories,
-  attentionVendors,
-  allVendors,
-  query,
-  onQuery,
-  onAddBudget,
-  onAddCategoryBudget,
-  onAddClosed,
-  onAddVendor,
-  onCompare,
-  onQuoteDetail,
-  onCloseQuoteDetail,
-  onPendingDetail,
-  onAddPendingCategory,
-  onAddPendingVendor,
-  onDeletePendingCategory,
-  onFilter
-}: {
-  activeTab: VendorsTab;
-  onTab: (tab: VendorsTab) => void;
-  message: string;
-  closedVendors: Vendor[];
-  quoteCategories: string[];
-  quoteDetailCategory: string | null;
-  proposals: QuoteProposal[];
-  pendingCategories: string[];
-  attentionVendors: Vendor[];
-  allVendors: Vendor[];
-  query: string;
-  onQuery: (value: string) => void;
-  onAddBudget: () => void;
-  onAddCategoryBudget: (category: string) => void;
-  onAddClosed: () => void;
-  onAddVendor: () => void;
-  onCompare: (category: string) => void;
-  onQuoteDetail: (category: string) => void;
-  onCloseQuoteDetail: () => void;
-  onPendingDetail: (category: string) => void;
-  onAddPendingCategory: () => void;
-  onAddPendingVendor: (category: string) => void;
-  onDeletePendingCategory: (category: string) => void;
-  onFilter: () => void;
-}) {
-  const contractPending = closedVendors.filter((vendor) => !vendor.contract.signed);
-  const upcomingPayments = closedVendors.filter((vendor) => vendor.nextPayment !== "A definir").slice(0, 4);
-
-  return (
-    <div className="-mx-11 -mt-9 min-h-screen bg-[#F8F4F1] px-11 py-9">
-      <div className="mx-auto max-w-7xl space-y-7">
-        <section className="rounded-[36px] bg-[#FFFDFC] p-8 shadow-[0_24px_80px_rgba(75,46,43,0.08)]">
-          <div className="flex items-end justify-between gap-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#C6A77D]">Wedding concierge</p>
-              <h1 className="mt-3 font-serif text-6xl leading-none text-[#4B2E2B]">Fornecedores</h1>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-[#8A716D]">
-                Uma central elegante para acompanhar quem ja fechou, o que falta assinar, pagamentos, tarefas e orçamentos.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={onAddBudget} className="h-12 border-[#EEE6E1] bg-[#FFFDFC] px-5">
-                <Plus className="h-4 w-4" />
-                Adicionar orçamento
-              </Button>
-              <Button type="button" onClick={onAddVendor} className="h-12 bg-[#D96C8A] px-5 hover:bg-[#C85D7B]">
-                <Plus className="h-4 w-4" />
-                Adicionar fornecedor
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <nav className="flex gap-2 rounded-full bg-[#FFFDFC] p-1 shadow-[0_12px_35px_rgba(75,46,43,0.06)]">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTab(tab)}
-              className={activeTab === tab ? "rounded-full bg-[#4B2E2B] px-8 py-4 text-sm font-bold text-white" : "rounded-full px-8 py-4 text-sm font-bold text-[#8A716D] hover:bg-[#F8F4F1]"}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-
-        {message ? <p className="rounded-2xl bg-[#EEF3EA] px-5 py-4 text-sm font-semibold text-[#4B2E2B]">{message}</p> : null}
-
-        <DesktopAttentionPanel vendors={attentionVendors} pendingCount={pendingCategories.length} onPending={() => onTab("Faltam contratar")} />
-
-        {activeTab === "Já fechados" ? (
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <section className="space-y-4">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h2 className="font-serif text-4xl text-[#4B2E2B]">Fornecedores fechados</h2>
-                  <p className="mt-1 text-sm text-[#8A716D]">{closedVendors.length} contratados com pagamentos, contrato e proximas tarefas.</p>
-                </div>
-                <Button type="button" onClick={onAddClosed} className="bg-[#D96C8A] hover:bg-[#C85D7B]">
-                  <Plus className="h-4 w-4" />
-                  Incluir fornecedor ja fechado
-                </Button>
-              </div>
-              <div className="grid gap-3">
-                {closedVendors.map((vendor) => <DesktopVendorCard key={vendor.id} vendor={vendor} />)}
-              </div>
-            </section>
-            <DesktopCarePanel contractPending={contractPending} upcomingPayments={upcomingPayments} />
-          </div>
-        ) : null}
-
-        {activeTab === "Ainda cotando" ? (
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <section className="space-y-4">
-              {quoteDetailCategory ? (
-                <QuoteCategoryDetail
-                  category={quoteDetailCategory}
-                  proposals={proposals.filter((proposal) => proposal.category === quoteDetailCategory)}
-                  onBack={onCloseQuoteDetail}
-                  onAddQuote={() => onAddCategoryBudget(quoteDetailCategory)}
-                  onCompare={() => onCompare(quoteDetailCategory)}
-                />
-              ) : (
-                <>
-                  <div>
-                    <h2 className="font-serif text-4xl text-[#4B2E2B]">Orçando por categoria</h2>
-                    <p className="mt-1 text-sm text-[#8A716D]">Clique em uma categoria para ver os orçamentos recebidos antes de comparar com a Sofia.</p>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {quoteCategories.map((category) => {
-                      const count = proposals.filter((proposal) => proposal.category === category).length;
-                      return (
-                        <DesktopQuoteCard
-                          key={category}
-                          category={category}
-                          count={count}
-                          onOpen={() => onQuoteDetail(category)}
-                          onCompare={() => onCompare(category)}
-                          onAddQuote={() => onAddCategoryBudget(category)}
-                        />
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </section>
-            <DesktopSofiaPanel onAddBudget={onAddBudget} />
-          </div>
-        ) : null}
-
-        {activeTab === "Faltam contratar" ? (
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <section className="space-y-4">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h2 className="font-serif text-4xl text-[#4B2E2B]">Ainda falta contratar</h2>
-                  <p className="mt-1 text-sm text-[#8A716D]">Categorias abertas, sem pressao, com caminho claro para agir.</p>
-                </div>
-                <Button type="button" onClick={onAddPendingCategory} className="bg-[#D96C8A] hover:bg-[#C85D7B]">
-                  <Plus className="h-4 w-4" />
-                  Adicionar categoria
-                </Button>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {pendingCategories.map((category) => (
-                  <DesktopPendingCard
-                    key={category}
-                    category={category}
-                    onOpen={() => onPendingDetail(category)}
-                    onAdd={() => onAddPendingVendor(category)}
-                    onDelete={() => onDeletePendingCategory(category)}
-                  />
-                ))}
-              </div>
-            </section>
-            <DesktopSofiaPanel onAddBudget={onAddBudget} />
-          </div>
-        ) : null}
-
-        {activeTab === "Todos" ? (
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <section className="space-y-4">
-              <div className="grid grid-cols-[1fr_auto] gap-3">
-                <label className="flex h-14 items-center gap-3 rounded-2xl bg-[#FFFDFC] px-5 shadow-sm ring-1 ring-[#EEE6E1]">
-                  <Search className="h-5 w-5 text-[#8A716D]" />
-                  <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar fornecedor" className="w-full bg-transparent text-sm outline-none" />
-                </label>
-                <Button type="button" variant="outline" onClick={onFilter} className="h-14 border-[#EEE6E1] bg-[#FFFDFC]">
-                  <Filter className="h-4 w-4" />
-                  Filtros
-                </Button>
-              </div>
-              <div className="overflow-hidden rounded-[28px] bg-[#FFFDFC] shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
-                {allVendors.map((vendor) => <DesktopVendorLine key={vendor.id} vendor={vendor} />)}
-              </div>
-            </section>
-            <DesktopCarePanel contractPending={contractPending} upcomingPayments={upcomingPayments} />
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 function CategoryMark({ category, compact = false, large = false }: { category: string; compact?: boolean; large?: boolean }) {
   const normalized = category.toLowerCase();
@@ -959,21 +711,6 @@ function FinanceMetric({ label, value, tone }: { label: string; value: string; t
       <p className="text-[10px] font-semibold uppercase leading-4 tracking-[0.12em] text-[#8A716D]">{label}</p>
       <p className={`mt-0.5 text-sm font-bold leading-5 ${text}`}>{value}</p>
     </div>
-  );
-}
-
-function TopBar({ title, onBack }: { title: string; onBack?: () => void }) {
-  return (
-    <header className="sticky top-0 z-20 -mx-4 mb-4 flex h-16 items-center justify-between bg-[#F8F4F1]/95 px-4 backdrop-blur">
-      <button type="button" onClick={onBack} className="grid h-10 w-10 place-items-center rounded-full text-[#4B2E2B]" aria-label={onBack ? "Voltar" : "Menu"}>
-        {onBack ? <ChevronLeft className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </button>
-      <h1 className="text-base font-bold text-[#4B2E2B]">{title}</h1>
-      <button type="button" className="relative grid h-10 w-10 place-items-center rounded-full text-[#4B2E2B]" aria-label="Notificacoes">
-        <Bell className="h-5 w-5" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#D96C8A]" />
-      </button>
-    </header>
   );
 }
 

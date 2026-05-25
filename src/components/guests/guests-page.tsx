@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
   ChevronRight,
   Clock3,
-  Heart,
   Mail,
-  Menu,
   MessageCircle,
   Plus,
   Search,
   Send,
-  Sparkles,
   UsersRound,
   Utensils,
   X
@@ -66,7 +62,7 @@ const defaultGuestGroups = [
 ];
 
 export function GuestsPage() {
-  const initialized = useRef(false);
+  const saveEnabled = useRef(false);
   const [activeTab, setActiveTab] = useState<GuestTab>("Resumo");
   const [guests, setGuests] = useState<Guest[]>([]);
   const [query, setQuery] = useState("");
@@ -103,11 +99,13 @@ export function GuestsPage() {
       setGuests(stored);
     }
     setRsvpSettings(getStoredRsvpSettings());
-    initialized.current = true;
   }, []);
 
   useEffect(() => {
-    if (!initialized.current) return;
+    if (!saveEnabled.current) {
+      saveEnabled.current = true;
+      return;
+    }
     saveStoredGuests(guests);
   }, [guests]);
 
@@ -225,13 +223,7 @@ export function GuestsPage() {
   }
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
-      <div className="mx-auto max-w-[430px] lg:max-w-[760px]">
-        <GuestTopBar
-          onMenu={() => setNotice({ title: "Menu dos convidados", description: "Use as abas para navegar por resumo, lista e grupos. Confirmação e mesas ficam no módulo Presença & Mesas." })}
-          onBell={() => setNotice({ title: "Avisos da Sofia", description: "Revise contatos sem WhatsApp, acompanhantes e restrições alimentares antes de enviar a confirmação." })}
-        />
-        <GuestHero />
+    <div className="space-y-4 pb-4">
         <GuestTabs active={activeTab} onChange={setActiveTab} />
 
         {message ? <p className="mb-4 rounded-2xl bg-casarei-green-soft px-4 py-3 text-sm font-semibold text-casarei-text-primary ring-1 ring-[#DCE8D4]">{message}</p> : null}
@@ -283,8 +275,6 @@ export function GuestsPage() {
           <GuestDataReview guests={guests} onOpen={setSelectedGuest} onList={() => setActiveTab("Lista")} />
         ) : null}
 
-      </div>
-
       {selectedGuest ? (
         <GuestDetails
           guest={selectedGuest}
@@ -328,45 +318,6 @@ export function GuestsPage() {
   );
 }
 
-function GuestTopBar({ onMenu, onBell }: { onMenu: () => void; onBell: () => void }) {
-  return (
-    <header className="mb-4 flex h-12 items-center justify-between">
-      <button type="button" onClick={onMenu} className="grid h-10 w-10 place-items-center rounded-full text-casarei-text-primary" aria-label="Menu">
-        <Menu className="h-5 w-5" />
-      </button>
-      <h1 className="text-sm font-bold text-casarei-text-primary">Convidados</h1>
-      <button type="button" onClick={onBell} className="relative grid h-10 w-10 place-items-center rounded-full text-casarei-text-primary" aria-label="Notificações">
-        <Bell className="h-5 w-5" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-casarei-pink" />
-      </button>
-    </header>
-  );
-}
-
-function GuestHero() {
-  return (
-    <section className="mb-5 rounded-[30px] bg-casarei-surface p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft lg:p-8">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-casarei-pink">Módulo</p>
-      <div className="mt-1 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-4xl leading-none text-casarei-text-primary lg:text-6xl">Convidados</h1>
-          <p className="mt-4 text-sm leading-7 text-casarei-text-secondary lg:text-base">
-            Cadastre convidados, organize grupos, contatos, acompanhantes e detalhes importantes sem depender de planilhas.
-          </p>
-        </div>
-        <Heart className="h-7 w-7 shrink-0 text-casarei-pink" />
-      </div>
-      <div className="mt-5 flex gap-3 rounded-3xl bg-casarei-pink-soft p-4">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-casarei-surface text-casarei-pink">
-          <Sparkles className="h-5 w-5" />
-        </span>
-        <p className="text-sm leading-6 text-casarei-text-primary">
-          Oi, Mari! Estou aqui para te ajudar a cuidar de cada detalhe dos seus convidados.
-        </p>
-      </div>
-    </section>
-  );
-}
 
 function GuestTabs({ active, onChange }: { active: GuestTab; onChange: (tab: GuestTab) => void }) {
   return (
