@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 
 const highlights = [
   { icon: CheckCircle2, label: "Tarefas organizadas por prazo" },
-  { icon: Users, label: "RSVP simples para convidados" },
-  { icon: CalendarHeart, label: "Orçamento e fornecedores no mesmo lugar" }
+  { icon: Users, label: "Convidados, presença e mesas conectados" },
+  { icon: CalendarHeart, label: "Financeiro e fornecedores no mesmo lugar" }
 ];
 
 export default function HomePage() {
@@ -20,12 +20,12 @@ export default function HomePage() {
             Planeje o casamento com calma, clareza e beleza.
           </h1>
           <p className="max-w-xl text-base leading-7 text-casarei-text">
-            Uma base mobile-first para organizar tarefas, orçamento, convidados e fornecedores antes de conectar Supabase e automações.
+            Uma central mobile-first para organizar tarefas, financeiro, convidados, presença, mesas e fornecedores em uma experiência única.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/login">
-                Começar teste fake
+                Entrar no Casarei
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </Button>

@@ -28,9 +28,12 @@ export const designTokens = {
 } as const;
 
 export const appNavigation = [
-  { href: "/app", label: "Inicio", icon: "Home" },
+  { href: "/app", label: "Início", icon: "Home" },
+  { href: "/app/cronograma", label: "Tarefas", icon: "CheckSquare" },
   { href: "/app/convidados", label: "Convidados", icon: "Users" },
-  { href: "/app/presenca-mesas", label: "Presença", icon: "Heart" },
+  { href: "/app/fornecedores", label: "Fornecedores", icon: "Store" },
+  { href: "/app/presenca-mesas", label: "Confirmações", icon: "CalendarCheck2" },
+  { href: "/app/presenca-mesas/mesas", label: "Mesas", icon: "Table2" },
   { href: "/app/orcamento", label: "Financeiro", icon: "Wallet" },
   { href: "/app/sofia", label: "Sofia", icon: "Sparkles" }
 ] as const;

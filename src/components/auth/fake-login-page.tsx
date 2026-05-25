@@ -24,7 +24,7 @@ export function FakeLoginPage() {
       createdAt: new Date().toISOString()
     });
 
-    setMessage("Login fake criado. Vamos para o onboarding.");
+    setMessage("Acesso criado. Vamos montar seu casamento.");
     window.setTimeout(() => router.push("/onboarding"), 350);
   }
 
@@ -35,12 +35,12 @@ export function FakeLoginPage() {
           <div className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-casarei-primary shadow-[0_14px_34px_rgba(114,36,62,0.12)]">
             <Heart className="h-6 w-6" aria-hidden />
           </div>
-          <p className="mt-8 text-sm font-semibold text-casarei-primary">Teste fake do Casarei</p>
+          <p className="mt-8 text-sm font-semibold text-casarei-primary">Casarei</p>
           <h1 className="mt-3 max-w-xl font-serif text-5xl font-medium leading-tight text-casarei-primary-deep md:text-6xl">
             Entre como noiva e teste a jornada completa.
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7">
-            Este login ainda não conecta backend. Ele serve para validar sensação, onboarding e fluxo do produto com dados salvos no navegador.
+            Entre para montar a estrutura inicial do casamento e testar a experiência completa do produto.
           </p>
         </div>
 
@@ -51,14 +51,14 @@ export function FakeLoginPage() {
             </span>
             <div>
               <p className="text-sm font-semibold text-casarei-primary">Entrar</p>
-              <h2 className="font-serif text-3xl text-casarei-primary-deep">Acesso de teste</h2>
+              <h2 className="font-serif text-3xl text-casarei-primary-deep">Acesso da noiva</h2>
             </div>
           </div>
 
           <div className="mt-7 grid gap-4">
             <Field label="Nome" value={name} placeholder="Mariana Silva" onChange={setName} />
             <Field label="Email" value={email} placeholder="mari@email.com" icon onChange={setEmail} />
-            <Field label="Senha fake" value={password} placeholder="Digite qualquer senha" type="password" onChange={setPassword} />
+            <Field label="Senha" value={password} placeholder="Digite sua senha" type="password" onChange={setPassword} />
           </div>
 
           {message ? <p className="mt-5 rounded-2xl bg-casarei-primary-bg px-4 py-3 text-sm font-semibold text-casarei-primary-deep">{message}</p> : null}
@@ -74,7 +74,7 @@ export function FakeLoginPage() {
           </div>
 
           <p className="mt-5 text-xs leading-5 text-casarei-muted">
-            Para limpar o teste depois, basta apagar os dados do site no navegador ou usar uma aba anônima.
+            Seus dados de experiência ficam salvos neste navegador enquanto validamos o fluxo do app.
           </p>
         </form>
       </section>
