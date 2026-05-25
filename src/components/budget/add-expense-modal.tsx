@@ -15,7 +15,7 @@ export function AddExpenseModal({ open, onClose, onSave }: { open: boolean; onCl
 
   function save() {
     if (!supplier.trim() || !amount.trim()) return;
-    onSave(`Gasto de R$ ${amount} com ${supplier} adicionado de forma mockada.`);
+    onSave(`Gasto de R$ ${amount} com ${supplier} adicionado.`);
     setSupplier("");
     setAmount("");
     onClose();

@@ -12,7 +12,7 @@ const events = [
 export default function TimelinePage() {
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow="Caminho até o sim" title="Timeline" description="Um resumo mockado dos próximos momentos importantes." />
+      <PageHeader eyebrow="Caminho até o sim" title="Timeline" description="Acompanhe os próximos momentos importantes do seu planejamento." />
       <section className="space-y-3">
         {events.map((event) => (
           <Card key={event.title} className="border-0 bg-white p-4">

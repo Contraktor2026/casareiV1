@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { getFakeSession, getOnboardingData, saveOnboardingData } from "@/lib/client/fake-auth";
+import { getOnboardingData, getSession, saveOnboardingData } from "@/lib/client/supabase-auth";
 import { budgetRanges, onboardingPriorities, weddingStyleOptions } from "@/lib/mock/onboarding";
 import type { OnboardingData } from "@/types/onboarding";
 
@@ -22,24 +22,24 @@ import { WeddingStyleSelector } from "./wedding-style-selector";
 import { WelcomeHero } from "./welcome-hero";
 
 const initialData: OnboardingData = {
-  fullName: "Mariana Silva",
-  phone: "(19) 99999-9999",
-  email: "mari@email.com",
+  fullName: "",
+  phone: "",
+  email: "",
   city: "Campinas",
   state: "SP",
-  styles: ["romantico"],
-  brideName: "Mariana",
-  partnerName: "Rafael",
-  weddingDate: "2026-10-12",
+  styles: [],
+  brideName: "",
+  partnerName: "",
+  weddingDate: "",
   weddingDateMode: "exact",
   guestRange: "100-150",
-  guestCount: 140,
+  guestCount: 0,
   weddingFormat: "Tradicional",
   ceremonyType: "No mesmo local da festa",
-  partySize: "Média",
-  vendorTypes: ["Espaço", "Buffet", "Fotografia", "Decoração", "Cerimonial", "Música/DJ"],
-  priorities: ["Fotografia", "Experiência convidados", "Gastronomia"],
-  plannedBudget: "R$ 70-100 mil"
+  partySize: "Media",
+  vendorTypes: [],
+  priorities: [],
+  plannedBudget: ""
 };
 
 const totalSteps = 12;
@@ -51,13 +51,14 @@ export function OnboardingExperience() {
 
   useEffect(() => {
     const savedData = getOnboardingData();
-    const session = getFakeSession();
+    const session = getSession();
+    const fullName = String(session?.user.user_metadata?.full_name ?? "");
 
     setData({
       ...initialData,
       ...savedData,
-      fullName: savedData?.fullName || session?.name || initialData.fullName,
-      email: savedData?.email || session?.email || initialData.email
+      fullName: savedData?.fullName || fullName || initialData.fullName,
+      email: savedData?.email || session?.user.email || initialData.email
     });
     setHydrated(true);
   }, []);

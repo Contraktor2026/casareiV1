@@ -24,7 +24,7 @@ export function RsvpSendFlow() {
       <Card className="surface-lift border-0 bg-white p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-casarei-primary-dark">Mensagem</p>
         <p className="mt-3 rounded-2xl bg-casarei-primary-bg p-4 text-sm leading-6 text-casarei-text">
-          Oi, {"{nome}"}! A Mari e o Rafa estão muito felizes em ter você por perto nesse momento.
+          Oi, {"{nome}"}! Queremos muito ter você por perto nesse momento.
           Confirme sua presença aqui: casarei.app/rsvp/{"{token}"}
         </p>
         <Button
@@ -33,7 +33,7 @@ export function RsvpSendFlow() {
           className="mt-3"
           onClick={() => {
             void navigator.clipboard?.writeText(
-              "Oi, {nome}! A Mari e o Rafa estão muito felizes em ter você por perto nesse momento. Confirme sua presença aqui: casarei.app/rsvp/{token}"
+              "Oi, {nome}! Queremos muito ter você por perto nesse momento. Confirme sua presença aqui: casarei.app/rsvp/{token}"
             );
             setCopied(true);
           }}
@@ -47,7 +47,7 @@ export function RsvpSendFlow() {
         <p className="text-sm font-medium text-casarei-text">Canal escolhido</p>
         <div className="mt-3">
           <Button asChild variant="whatsapp" className="w-full">
-            <a href="https://wa.me/?text=Oi!%20Confirme%20sua%20presenca%20no%20casamento:%20http://localhost:3000/rsvp/demo-token">
+            <a href="https://wa.me/?text=Oi!%20Confirme%20sua%20presenca%20no%20casamento">
               <MessageCircle className="h-4 w-4" aria-hidden />
               WhatsApp deeplink
             </a>

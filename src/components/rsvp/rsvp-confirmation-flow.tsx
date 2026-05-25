@@ -21,7 +21,7 @@ export function RsvpConfirmationFlow() {
         </div>
         <h2 className="mt-5 font-serif text-4xl text-casarei-primary-deep">Presença recebida</h2>
         <p className="mt-3 text-sm leading-6 text-casarei-text">
-          Obrigada por responder, {mockRsvpGuest.name}. A Mari e o Rafa vão ficar felizes em saber que você passou por aqui com carinho.
+          Obrigada por responder, {mockRsvpGuest.name || "convidado"}. O casal vai ficar feliz em saber que você passou por aqui com carinho.
         </p>
       </Card>
     );

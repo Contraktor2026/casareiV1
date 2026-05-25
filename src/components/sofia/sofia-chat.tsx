@@ -41,7 +41,7 @@ export function SofiaChat({ initialMessages, prompts }: SofiaChatProps) {
         <p className="text-sm font-semibold text-casarei-primary">Conversa com a Sofia</p>
         <h2 className="mt-1 font-serif text-3xl text-casarei-primary-deep">Um espaco seguro para planejar</h2>
         <p className="mt-1 text-sm leading-6 text-casarei-muted">
-          Pergunte como falaria com uma assessora. Por enquanto, as respostas sao mockadas.
+          Pergunte como falaria com uma assessora.
         </p>
       </div>
 

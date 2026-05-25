@@ -21,8 +21,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { getOnboardingData } from "@/lib/client/fake-auth";
-import { mockCouple } from "@/lib/mock/casarei";
+import { getOnboardingData, getSession } from "@/lib/client/supabase-auth";
 import type { OnboardingData } from "@/types/onboarding";
 
 const defaultBannerImage = "https://images.unsplash.com/photo-1519741497674-611481863552?w=1400&auto=format&fit=crop";
@@ -60,13 +59,14 @@ export default function DashboardPage() {
     setOnboarding(getOnboardingData());
   }, []);
 
-  const coupleName = onboarding?.brideName && onboarding?.partnerName ? `${onboarding.brideName} & ${onboarding.partnerName}` : mockCouple.coupleName;
-  const weddingDate = onboarding?.weddingDate ? formatWeddingDate(onboarding.weddingDate) : mockCouple.weddingDate;
-  const city = onboarding?.city || mockCouple.city;
-  const state = onboarding?.state || mockCouple.state;
-  const guestCount = onboarding?.guestCount || 140;
-  const plannedBudget = onboarding?.plannedBudget || "R$ 70-100 mil";
-  const firstName = onboarding?.brideName || "Mari";
+  const session = typeof window !== "undefined" ? getSession() : null;
+  const coupleName = onboarding?.brideName && onboarding?.partnerName ? `${onboarding.brideName} & ${onboarding.partnerName}` : "Seu casamento";
+  const weddingDate = onboarding?.weddingDate ? formatWeddingDate(onboarding.weddingDate) : "Data a definir";
+  const city = onboarding?.city || "Cidade";
+  const state = onboarding?.state || "UF";
+  const guestCount = onboarding?.guestCount || 0;
+  const plannedBudget = onboarding?.plannedBudget || "orçamento a definir";
+  const firstName = onboarding?.brideName || String(session?.user.user_metadata?.full_name ?? "").split(" ")[0] || "olá";
 
   function uploadBannerImage(file?: File) {
     if (!file) return;

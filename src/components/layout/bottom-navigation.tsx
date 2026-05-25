@@ -2,42 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck2, CheckSquare, Home, Sparkles, Store, Table2, Users, Wallet } from "lucide-react";
+import { CheckSquare, Home, Menu, Store, Users } from "lucide-react";
 
-import { appNavigation } from "@/lib/constants/design";
 import { cn } from "@/lib/utils";
 
-const icons = {
-  Home,
-  CheckSquare,
-  Users,
-  Store,
-  CalendarCheck2,
-  Table2,
-  Wallet,
-  Sparkles
-};
+const items = [
+  { href: "/app", label: "Inicio", icon: Home, match: ["/app"] },
+  { href: "/app/cronograma", label: "Tarefas", icon: CheckSquare, match: ["/app/cronograma", "/app/tarefas"] },
+  {
+    href: "/app/convidados",
+    label: "Convidados",
+    icon: Users,
+    match: ["/app/convidados", "/app/presenca-mesas"]
+  },
+  { href: "/app/fornecedores", label: "Fornecedores", icon: Store, match: ["/app/fornecedores", "/app/cotacoes"] },
+  { href: "/app/sofia", label: "Mais", icon: Menu, match: ["/app/sofia", "/app/orcamento", "/app/inspiracoes"] }
+];
 
 export function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="mobile-scroll-clean fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto rounded-[22px] border border-[#e8dcd7] bg-[rgba(255,253,249,0.96)] p-2 shadow-[0_20px_50px_rgba(153,53,86,0.12)] backdrop-blur lg:hidden">
-      {appNavigation.map((item) => {
-        const Icon = icons[item.icon];
-        const isActive = pathname === item.href || (item.href !== "/app" && pathname.startsWith(item.href));
+    <nav className="mobile-bottom-nav" aria-label="Navegacao principal">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.match.some((href) => pathname === href || (href !== "/app" && pathname.startsWith(href)));
 
         return (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "min-w-[76px] rounded-[14px] px-2 py-2 text-center text-[10px] font-medium text-[#7b6a70]",
-              isActive && "bg-[#fbeaf0] font-bold text-[#d4537e]"
+              "mobile-bottom-item",
+              isActive && "text-[#D96C8A] [&_span:first-child]:bg-[#F8E7EC] [&_span:first-child]:text-[#D96C8A]"
             )}
           >
-            <Icon className="mx-auto mb-1 h-4 w-4" aria-hidden />
-            {item.label}
+            <span>
+              <Icon className="h-[19px] w-[19px]" strokeWidth={1.7} aria-hidden />
+            </span>
+            <strong>{item.label}</strong>
           </Link>
         );
       })}

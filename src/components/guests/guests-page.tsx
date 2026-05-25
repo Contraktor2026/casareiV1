@@ -153,8 +153,9 @@ export function GuestsPage() {
   function addGuest(data: GuestFormData) {
     const [firstName, ...rest] = data.name.trim().split(" ");
     const timestamp = Date.now();
+    const template = createGuestTemplate();
     const guest: Guest = {
-      ...mockGuestsRich[0],
+      ...template,
       id: `guest-${timestamp}`,
       firstName,
       lastName: rest.join(" "),
@@ -163,7 +164,7 @@ export function GuestsPage() {
       relation: data.relation,
       phone: data.phone,
       email: data.email,
-      rsvp: { ...mockGuestsRich[0].rsvp, status: "pending", viewed: false, responded: false, token: `guest-${timestamp}` },
+      rsvp: { ...template.rsvp, status: "pending", viewed: false, responded: false, token: `guest-${timestamp}` },
       companions: { allowed: data.companions > 0, allowedCount: data.companions, confirmedCount: 0, names: [] },
       children: { count: 0, names: [] },
       food: { vegetarian: data.food.toLowerCase().includes("vegetar"), vegan: data.food.toLowerCase().includes("vegano"), intolerance: data.food, allergies: "", buffetNotes: data.food },
@@ -184,8 +185,9 @@ export function GuestsPage() {
 
   function buildGuestFromData(data: GuestFormData, idSuffix: string): Guest {
     const [firstName, ...rest] = data.name.trim().split(" ");
+    const template = createGuestTemplate();
     return {
-      ...mockGuestsRich[0],
+      ...template,
       id: `guest-${idSuffix}`,
       firstName,
       lastName: rest.join(" "),
@@ -194,7 +196,7 @@ export function GuestsPage() {
       relation: data.relation,
       phone: data.phone,
       email: data.email,
-      rsvp: { ...mockGuestsRich[0].rsvp, status: "pending", viewed: false, responded: false, token: `guest-${idSuffix}` },
+      rsvp: { ...template.rsvp, status: "pending", viewed: false, responded: false, token: `guest-${idSuffix}` },
       companions: { allowed: data.companions > 0, allowedCount: data.companions, confirmedCount: 0, names: [] },
       children: { count: 0, names: [] },
       food: { vegetarian: data.food.toLowerCase().includes("vegetar"), vegan: data.food.toLowerCase().includes("vegano"), intolerance: data.food, allergies: "", buffetNotes: data.food },
@@ -1130,6 +1132,57 @@ function rsvpTone(status: GuestRsvpStatus) {
   if (status === "declined") return "bg-casarei-pink-soft text-casarei-pink";
   if (status === "viewed") return "bg-[#EEF1F4] text-[#6E7F91]";
   return "bg-[#FBEEE8] text-[#B96F52]";
+}
+
+function createGuestTemplate(): Guest {
+  return {
+    id: "",
+    firstName: "",
+    lastName: "",
+    nickname: "",
+    phone: "",
+    email: "",
+    group: "",
+    relation: "",
+    side: "couple",
+    notes: "",
+    rsvp: {
+      status: "pending",
+      invitationSent: false,
+      viewed: false,
+      responded: false,
+      remindersSent: 0,
+      token: "",
+      lastInteraction: ""
+    },
+    companions: {
+      allowed: false,
+      allowedCount: 0,
+      confirmedCount: 0,
+      names: []
+    },
+    children: {
+      count: 0,
+      names: []
+    },
+    food: {
+      vegetarian: false,
+      vegan: false,
+      intolerance: "",
+      allergies: "",
+      buffetNotes: ""
+    },
+    table: {
+      name: "",
+      group: "",
+      affinities: [],
+      avoidWith: []
+    },
+    internalNote: "",
+    ceremonialNote: "",
+    buffetNote: "",
+    history: []
+  };
 }
 
 function groupTone(tone: GuestGroupTone | string) {

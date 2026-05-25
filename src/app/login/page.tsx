@@ -1,5 +1,5 @@
-import { FakeLoginPage } from "@/components/auth/fake-login-page";
+import { LoginPage as AuthLoginPage } from "@/components/auth/login-page";
 
 export default function LoginPage() {
-  return <FakeLoginPage />;
+  return <AuthLoginPage />;
 }

@@ -32,7 +32,7 @@ export function CoupleNameStep({ brideName, partnerName, onChange, onNext, onBac
             <input
               value={partnerName}
               onChange={(event) => onChange("partnerName", event.target.value)}
-              placeholder="Rafael"
+              placeholder="Nome do seu amor"
               className="h-14 w-full rounded-2xl border border-casarei-border-soft bg-white px-4 text-base outline-none focus:border-casarei-primary"
             />
           </label>

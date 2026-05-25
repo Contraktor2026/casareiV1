@@ -16,7 +16,7 @@ type GuestCardProps = {
 };
 
 export function GuestCard({ guest, onDetails, onEdit, onRemove }: GuestCardProps) {
-  const whatsappMessage = `Oi, ${guest.firstName}. Mariana & Rafael querem celebrar esse dia especial com você. Confirme sua presença aqui: http://localhost:3000/rsvp/${guest.rsvp.token}`;
+  const whatsappMessage = `Oi, ${guest.firstName}. Queremos celebrar esse dia especial com você. Confirme sua presença aqui: /rsvp/${guest.rsvp.token}`;
 
   return (
     <article className="group rounded-3xl border border-casarei-border-soft bg-white/90 p-4 shadow-[0_14px_40px_rgba(114,36,62,0.06)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(114,36,62,0.10)]">

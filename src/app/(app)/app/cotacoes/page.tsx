@@ -222,7 +222,7 @@ export default function QuotesPage() {
       responsible: proposal.vendor.split(" ")[0],
       whatsapp: "5511999999999",
       phone: "",
-      email: `${vendorId}@casarei.demo`,
+      email: "",
       instagram: "",
       site: "",
       city: "",

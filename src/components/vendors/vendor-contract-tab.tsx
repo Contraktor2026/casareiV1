@@ -20,7 +20,7 @@ export function VendorContractTab({ vendor }: { vendor: Vendor }) {
       <div className="mt-5 flex flex-wrap gap-2">
         <Button type="button">Anexar contrato</Button>
         <Button type="button" variant="outline" className="bg-white">Marcar como assinado</Button>
-        <Button type="button" variant="outline" className="bg-white">Abrir arquivo mockado</Button>
+        <Button type="button" variant="outline" className="bg-white">Abrir arquivo</Button>
       </div>
     </section>
   );

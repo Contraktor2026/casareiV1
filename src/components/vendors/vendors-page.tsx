@@ -175,7 +175,7 @@ export function VendorsPage() {
       responsible: proposal.vendor.split(" ")[0],
       whatsapp: "5511999999999",
       phone: "(11) 99999-9999",
-      email: `${proposal.id}@casarei.demo`,
+      email: "",
       instagram: "",
       site: "",
       city: "",
@@ -220,7 +220,7 @@ export function VendorsPage() {
 
   return (
     <>
-      <div className="lg:hidden">
+      <div>
         <MobileFrame>
           <TopBar title={activeTab === "Ainda cotando" ? "Ainda cotando" : "Fornecedores"} />
           <TabBar active={activeTab} onChange={setActiveTab} />
@@ -267,7 +267,7 @@ export function VendorsPage() {
         </MobileFrame>
       </div>
 
-      <div className="hidden lg:block">
+      <div className="hidden">
         <DesktopVendors
           activeTab={activeTab}
           onTab={setActiveTab}

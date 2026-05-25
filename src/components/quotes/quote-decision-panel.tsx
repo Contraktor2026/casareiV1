@@ -49,7 +49,7 @@ export function QuoteDecisionPanel({ favorites }: { favorites: QuoteProposal[] }
       </label>
       <p className="mt-3 flex items-center gap-2 text-xs text-casarei-muted">
         <MessageSquareText className="h-4 w-4" aria-hidden />
-        Esse campo ainda é mockado, mas já valida a decisão emocional junto da comparação.
+        Use este campo para registrar a decisão emocional junto da comparação.
       </p>
     </section>
   );

@@ -6,7 +6,7 @@ export function RSVPTemplatePreview({ template }: { template: RsvpTemplate }) {
       <div className="relative h-40 bg-cover bg-center" style={{ backgroundImage: `url(${template.cover})` }}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
         <div className="absolute bottom-4 left-4 text-white">
-          <p className={template.serif ? "font-serif text-2xl" : "text-xl font-semibold"}>Mariana & Rafael</p>
+          <p className={template.serif ? "font-serif text-2xl" : "text-xl font-semibold"}>Nome do casal</p>
           <p className="text-xs">12 de outubro de 2026</p>
         </div>
       </div>

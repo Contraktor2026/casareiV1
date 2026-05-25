@@ -26,7 +26,7 @@ export function BasicInfoStep({ fullName, phone, email, city, state, onChange, o
           <Field icon={UserRound} label="Seu nome" value={fullName} placeholder="Mariana Silva" onChange={(value) => onChange("fullName", value)} />
           <div className="grid gap-4 md:grid-cols-2">
             <Field icon={Phone} label="Telefone" value={phone} placeholder="(11) 99999-9999" onChange={(value) => onChange("phone", value)} />
-            <Field icon={Mail} label="Email" value={email} placeholder="mari@email.com" onChange={(value) => onChange("email", value)} />
+            <Field icon={Mail} label="Email" value={email} placeholder="voce@email.com" onChange={(value) => onChange("email", value)} />
           </div>
           <div className="grid gap-4 md:grid-cols-[1fr_120px]">
             <Field icon={MapPin} label="Cidade" value={city} placeholder="Campinas" onChange={(value) => onChange("city", value)} />
@@ -34,7 +34,7 @@ export function BasicInfoStep({ fullName, phone, email, city, state, onChange, o
           </div>
         </div>
         <p className="mt-5 rounded-2xl bg-casarei-primary-bg/60 px-4 py-3 text-sm leading-6 text-casarei-text">
-          Essas informações ficam mockadas por enquanto. Depois, elas ajudam a Sofia a lembrar cidade, fornecedores próximos e contatos importantes.
+          Essas informações ajudam a Sofia a lembrar cidade, fornecedores próximos e contatos importantes.
         </p>
         <OnboardingActions onBack={onBack} onNext={onNext} />
       </div>

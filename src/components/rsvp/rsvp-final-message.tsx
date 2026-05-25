@@ -11,7 +11,7 @@ export function RSVPFinalMessage({ accepted }: { accepted: boolean }) {
       </h2>
       <p className="mt-3 text-sm leading-6 text-casarei-text">
         {accepted
-          ? "Mariana & Rafael vão amar celebrar esse dia com você."
+          ? "O casal vai amar celebrar esse dia com você."
           : "Obrigada por avisar. Sua mensagem chega aos noivos com muito cuidado."}
       </p>
     </section>

@@ -11,7 +11,7 @@ type OnboardingResultProps = {
 
 export function OnboardingResult({ data, onBack }: OnboardingResultProps) {
   const bride = data.brideName || "Mari";
-  const partner = data.partnerName || "Rafael";
+  const partner = data.partnerName || "seu amor";
 
   return (
     <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">

@@ -26,7 +26,7 @@ export function buildWhatsappLink(guest: Guest, message?: string) {
   const phone = guest.phone.replace(/\D/g, "");
   const text =
     message ??
-    `Oi, ${guest.firstName}. Mariana & Rafael querem celebrar esse dia especial com você. Confirme sua presença aqui: http://localhost:3000/rsvp/${guest.rsvp.token}`;
+    `Oi, ${guest.firstName}. Queremos celebrar esse dia especial com você. Confirme sua presença aqui: /rsvp/${guest.rsvp.token}`;
 
   return `https://wa.me/55${phone}?text=${encodeURIComponent(text)}`;
 }

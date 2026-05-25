@@ -34,7 +34,7 @@ export function RSVPSendPage() {
 
   const selectedGuests = mockGuestsRich.filter((guest) => selected.includes(guest.id));
   const previewGuest = selectedGuests[0] ?? guests[0] ?? mockGuestsRich[0];
-  const preview = `Oi, ${previewGuest.firstName}\n\nMariana & Rafael querem celebrar esse dia especial com você.\nConfirme sua presença aqui:\nhttp://localhost:3000/rsvp/${previewGuest.rsvp.token}`;
+  const preview = `Oi, ${previewGuest?.firstName || "{nome}"}\n\nQueremos celebrar esse dia especial com você.\nConfirme sua presença aqui:\n/rsvp/${previewGuest?.rsvp.token || "{token}"}`;
 
   function toggleGuest(guest: Guest) {
     setSelected((current) => (current.includes(guest.id) ? current.filter((id) => id !== guest.id) : [...current, guest.id]));
