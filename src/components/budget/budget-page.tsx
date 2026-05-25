@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
 import { getVendorFinancePayments, saveVendorFinancePayment, subscribeVendorFinancePayments } from "@/lib/client/vendor-finance-sync";
 import { budgetCategories, budgetOverview, budgetPayments } from "@/lib/mock/budget";
-import { mockVendorsFull } from "@/lib/mock/vendors";
 import type { BudgetCategory, BudgetPayment, BudgetPaymentStatus } from "@/types/budget";
 import type { Vendor, VendorCategory, VendorPayment } from "@/types/vendors";
 
@@ -73,7 +72,7 @@ function sortByDueDate(payments: BudgetPayment[]) {
 
 export function BudgetPage() {
   const [vendorPayments, setVendorPayments] = useState<BudgetPayment[]>([]);
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendorsFull);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null);
   const [message, setMessage] = useState("");
@@ -81,10 +80,10 @@ export function BudgetPage() {
 
   useEffect(() => {
     setVendorPayments(getVendorFinancePayments());
-    setVendors(mergeVendors(getStoredVendors(), mockVendorsFull));
+    setVendors(getStoredVendors());
     return subscribeVendorFinancePayments(() => {
       setVendorPayments(getVendorFinancePayments());
-      setVendors(mergeVendors(getStoredVendors(), mockVendorsFull));
+      setVendors(getStoredVendors());
     });
   }, []);
 
@@ -137,7 +136,7 @@ export function BudgetPage() {
         ? applyPaymentToVendor(currentVendor, vendorPayment, totalValue)
         : createVendorFromExpense(vendorId, supplier, category, totalValue, vendorPayment, draft.note);
       upsertStoredVendor(nextVendor);
-      setVendors(mergeVendors([nextVendor, ...getStoredVendors()], mockVendorsFull));
+      setVendors(getStoredVendors());
     }
 
     setVendorPayments(getVendorFinancePayments());
@@ -147,77 +146,72 @@ export function BudgetPage() {
 
   return (
     <>
-      <div className="-mx-4 -mt-2 min-h-screen bg-[#FFF8F4] pb-36 md:-mx-8 lg:-mx-11 lg:pb-12">
-        <main className="mx-auto max-w-6xl space-y-5 px-4 pt-4 md:px-8 lg:px-11">
-          <section className="rounded-[28px] bg-white p-5 shadow-[0_16px_42px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#993556]">Financeiro</p>
-            <h1 className="mt-2 font-serif text-4xl leading-none text-[#4B1528] md:text-5xl">Seu dinheiro sem confusão</h1>
-            <p className="mt-3 text-sm leading-6 text-[#6F5B57]">
-              Você ainda pode gastar <strong className="text-[#3B6D11]">{money(budgetOverview.available)}</strong>.{" "}
-              {nextDue ? <>O próximo pagamento vence {dueText(daysBetween(nextDue.dueDate)).toLowerCase()}.</> : "Nenhum vencimento em aberto."}
-            </p>
+      <div className="space-y-4 pb-4">
+        {/* ── Hero ── */}
+        <section className="rounded-[28px] bg-white p-5 shadow-[0_16px_42px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#993556]">Financeiro</p>
+          <h1 className="mt-1 font-serif text-3xl leading-none text-[#4B1528]">Seu dinheiro sem confusão</h1>
+          <p className="mt-3 text-sm leading-6 text-[#6F5B57]">
+            Você ainda pode gastar <strong className="text-[#3B6D11]">{money(budgetOverview.available)}</strong>.{" "}
+            {nextDue ? <>O próximo pagamento vence {dueText(daysBetween(nextDue.dueDate)).toLowerCase()}.</> : "Nenhum vencimento em aberto."}
+          </p>
 
-            <div className="mt-5 rounded-[22px] bg-[#FFF8F4] p-4">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <strong className="font-serif text-4xl font-medium text-[#2A1A1F]">{money(budgetOverview.committed)}</strong>
-                <span className="text-sm text-[#8A716D]">usado de {money(budgetOverview.planned)}</span>
-              </div>
-              <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#F4ECE8]">
-                <div className="h-full rounded-full bg-[linear-gradient(90deg,#ED93B1,#D4537E)]" style={{ width: `${usedPercent}%` }} />
-              </div>
+          <div className="mt-4 rounded-[22px] bg-[#FFF8F4] p-4">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <strong className="font-serif text-4xl font-medium text-[#2A1A1F]">{money(budgetOverview.committed)}</strong>
+              <span className="text-sm text-[#8A716D]">usado de {money(budgetOverview.planned)}</span>
             </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-              <MetricCard label="Disponível" value={money(budgetOverview.available)} tone="ok" icon={<Wallet />} />
-              <MetricCard label="A pagar" value={money(payable)} tone="warn" icon={<Clock3 />} />
-              <MetricCard label="Pago" value={money(paid)} tone="ok" icon={<CheckCircle2 />} />
-              <MetricCard label="Atrasado" value={money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} tone="danger" icon={<AlertTriangle />} />
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#F4ECE8]">
+              <div className="h-full rounded-full bg-[linear-gradient(90deg,#ED93B1,#D4537E)]" style={{ width: `${usedPercent}%` }} />
             </div>
-          </section>
+          </div>
 
-          <section className="grid gap-3 md:grid-cols-3">
-            <ActionButton href="/app/orcamento/categorias" title="Ver categorias" text="Onde o dinheiro está indo" icon={<CircleDollarSign />} />
-            <ActionButton href="/app/orcamento/pagamentos" title="Ver pagamentos" text="Atrasados, semana e pagos" icon={<Receipt />} />
-            <button type="button" onClick={() => setShowExpenseModal(true)} className="flex min-h-[92px] items-center gap-3 rounded-[22px] bg-[#D4537E] p-4 text-left text-white shadow-[0_16px_36px_rgba(212,83,126,0.22)]">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/18"><Plus className="h-5 w-5" /></span>
-              <span>
-                <strong className="block text-base">Adicionar gasto</strong>
-                <span className="mt-1 block text-sm text-white/82">Fornecedor ou despesa avulsa</span>
-              </span>
-            </button>
-          </section>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <MetricCard label="Disponível" value={money(budgetOverview.available)} tone="ok" icon={<Wallet />} />
+            <MetricCard label="A pagar" value={money(payable)} tone="warn" icon={<Clock3 />} />
+            <MetricCard label="Pago" value={money(paid)} tone="ok" icon={<CheckCircle2 />} />
+            <MetricCard label="Atrasado" value={money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} tone="danger" icon={<AlertTriangle />} />
+          </div>
+        </section>
 
-          {message ? <p className="rounded-2xl bg-[#EAF3DE] px-4 py-3 text-sm font-bold text-[#27500A]">{message}</p> : null}
+        {/* ── Adicionar gasto ── */}
+        <button type="button" onClick={() => setShowExpenseModal(true)} className="flex w-full items-center gap-3 rounded-[22px] bg-[#D4537E] p-4 text-left text-white shadow-[0_16px_36px_rgba(212,83,126,0.22)]">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/20"><Plus className="h-5 w-5" /></span>
+          <span>
+            <strong className="block text-base">Adicionar gasto</strong>
+            <span className="mt-0.5 block text-sm text-white/80">Fornecedor ou despesa avulsa</span>
+          </span>
+        </button>
 
-          <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr_0.9fr]">
-            <SimplePanel title="Categorias" action={<Link href="/app/orcamento/categorias">Ver todas</Link>}>
-              <div className="space-y-2">
-                {categorySummaries.slice(0, 5).map((category) => (
-                  <CategoryRow key={category.id} category={category} onOpen={() => setSelectedCategory(category)} />
-                ))}
-              </div>
-            </SimplePanel>
+        {message ? <p className="rounded-2xl bg-[#EAF3DE] px-4 py-3 text-sm font-bold text-[#27500A]">{message}</p> : null}
 
-            <SimplePanel title="Próximos pagamentos" action={<Link href="/app/orcamento/pagamentos">Abrir agenda</Link>}>
-              <div className="space-y-2">
-                {allPayments.filter((payment) => payment.status !== "pago").slice(0, 4).map((payment) => <DueRow key={payment.id} payment={payment} />)}
-              </div>
-            </SimplePanel>
+        {/* ── Categorias ── */}
+        <SimplePanel title="Categorias" action={<Link href="/app/orcamento/categorias">Ver todas</Link>}>
+          <div className="space-y-2">
+            {categorySummaries.slice(0, 5).map((category) => (
+              <CategoryRow key={category.id} category={category} onOpen={() => setSelectedCategory(category)} />
+            ))}
+          </div>
+        </SimplePanel>
 
-            <SimplePanel title="Alertas">
-              {overdue.length ? (
-                <div className="space-y-2">
-                  <p className="rounded-2xl bg-[#FCEBEB] p-4 text-sm leading-6 text-[#791F1F]">
-                    Tem {money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} atrasado. Comece por esses pagamentos.
-                  </p>
-                  {overdue.slice(0, 3).map((payment) => <DueRow key={payment.id} payment={payment} compact />)}
-                </div>
-              ) : (
-                <p className="rounded-2xl bg-[#EAF3DE] p-4 text-sm leading-6 text-[#27500A]">Tudo em dia por aqui. Nenhum pagamento atrasado.</p>
-              )}
-            </SimplePanel>
-          </section>
-        </main>
+        {/* ── Próximos pagamentos ── */}
+        <SimplePanel title="Próximos pagamentos" action={<Link href="/app/orcamento/pagamentos">Abrir agenda</Link>}>
+          <div className="space-y-2">
+            {allPayments.filter((payment) => payment.status !== "pago").slice(0, 4).map((payment) => <DueRow key={payment.id} payment={payment} />)}
+          </div>
+        </SimplePanel>
+
+        {/* ── Alertas ── */}
+        {overdue.length > 0 && (
+          <SimplePanel title="Alertas">
+            <div className="space-y-2">
+              <p className="rounded-2xl bg-[#FCEBEB] p-4 text-sm leading-6 text-[#791F1F]">
+                Tem {money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} atrasado. Comece por esses pagamentos.
+              </p>
+              {overdue.slice(0, 3).map((payment) => <DueRow key={payment.id} payment={payment} compact />)}
+            </div>
+          </SimplePanel>
+        )}
       </div>
 
       <CategoryDetailModal category={selectedCategory} payments={allPayments} onClose={() => setSelectedCategory(null)} />
@@ -236,17 +230,6 @@ function MetricCard({ label, value, tone, icon }: { label: string; value: string
   );
 }
 
-function ActionButton({ href, title, text, icon }: { href: string; title: string; text: string; icon: ReactNode }) {
-  return (
-    <Link href={href} className="flex min-h-[92px] items-center gap-3 rounded-[22px] border border-[#F0E1DD] bg-white p-4 text-[#2A1A1F] shadow-[0_10px_28px_rgba(75,46,43,0.06)]">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FBEAF0] text-[#D4537E] [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
-      <span>
-        <strong className="block text-base">{title}</strong>
-        <span className="mt-1 block text-sm text-[#8A716D]">{text}</span>
-      </span>
-    </Link>
-  );
-}
 
 function SimplePanel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
@@ -493,10 +476,6 @@ function createVendorFromExpense(id: string, supplier: string, category: string,
   };
 }
 
-function mergeVendors(primary: Vendor[], fallback: Vendor[]) {
-  const ids = new Set(primary.map((vendor) => vendor.id));
-  return [...primary, ...fallback.filter((vendor) => !ids.has(vendor.id))];
-}
 
 function normalizeVendorCategory(category: string): VendorCategory {
   const normalized = category.toLowerCase();
