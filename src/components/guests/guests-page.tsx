@@ -179,32 +179,18 @@ export function GuestsPage() {
     };
   }
 
-  function importGuests(text: string) {
-    const importedGuests = text
-      .split(/\n/)
-      .map((line, index) => {
-        const [rawName, rawGroup, rawPhone, rawEmail] = line.split(",").map((item) => item?.trim() ?? "");
-        if (!rawName) return null;
-        return buildGuestFromData(
-          {
-            name: rawName,
-            group: rawGroup || "Convidados importados",
-            relation: "Convidado",
-            phone: rawPhone || "",
-            email: rawEmail || "",
-            companions: 0,
-            food: "",
-            notes: "Importado da lista"
-          },
-          `import-${Date.now()}-${index}`
-        );
-      })
-      .filter((guest): guest is Guest => Boolean(guest));
-
-    if (!importedGuests.length) {
-      setMessage("Cole pelo menos um convidado para importar.");
+  function importGuests(rows: ParsedRow[]) {
+    const valid = rows.filter((r) => r.valid);
+    if (!valid.length) {
+      setMessage("Nenhuma linha válida para importar. Corrija os erros e tente novamente.");
       return;
     }
+    const importedGuests = valid.map((row, index) =>
+      buildGuestFromData(
+        { name: row.name, group: row.group, relation: "Convidado", phone: row.phone, email: row.email, companions: 0, food: "", notes: "Importado da lista" },
+        `import-${Date.now()}-${index}`
+      )
+    ).filter((g): g is Guest => Boolean(g));
 
     setGuests((current) => [...importedGuests, ...current]);
     setShowImportForm(false);
@@ -299,7 +285,7 @@ export function GuestsPage() {
         />
       ) : null}
       {showGuestForm ? <AddGuestSheet onClose={() => setShowGuestForm(false)} onSave={addGuest} /> : null}
-      {showImportForm ? <ImportGuestSheet onClose={() => setShowImportForm(false)} onImport={importGuests} /> : null}
+      {showImportForm ? <ImportGuestSheet onClose={() => setShowImportForm(false)} onImport={(rows) => importGuests(rows)} /> : null}
       {showGroupForm ? <CreateGroupSheet onClose={() => setShowGroupForm(false)} onSave={(name) => { setShowGroupForm(false); setMessage(`Grupo "${name}" criado para organizar seus convidados.`); }} /> : null}
       {notice ? <NoticeSheet title={notice.title} description={notice.description} onClose={() => setNotice(null)} /> : null}
       {showRsvpSettings ? (
@@ -847,26 +833,208 @@ function EditGuestSheet({ guest, onClose, onSave }: { guest: Guest; onClose: () 
   );
 }
 
-function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport: (text: string) => void }) {
+// ─── Smart import parser ──────────────────────────────────────────────────────
+
+type ParsedRow = {
+  raw: string;
+  name: string;
+  group: string;
+  phone: string;
+  email: string;
+  issues: string[];
+  valid: boolean;
+};
+
+function extractPhone(text: string): { clean: string; phone: string } {
+  const m = text.match(/(?:\+55[\s-]?)?(?:\(?\d{2}\)?[\s-]?)?\d{4,5}[\s-]?\d{4}/);
+  if (!m) return { clean: text, phone: "" };
+  return { clean: text.replace(m[0], "").replace(/\s{2,}/g, " ").trim(), phone: m[0].replace(/\s/g, "") };
+}
+
+function isPhone(s: string) { return /^[\d\s\-()+]{8,20}$/.test(s.trim()); }
+function isEmail(s: string) { return s.includes("@"); }
+
+function parseLine(line: string): ParsedRow {
+  const issues: string[] = [];
+  const parts = line.split(",").map((p) => p.trim());
+  let name = "";
+  let group = "Convidados importados";
+  let phone = "";
+  let email = "";
+
+  const { clean, phone: embeddedPhone } = extractPhone(parts[0] ?? "");
+  name = clean;
+  phone = embeddedPhone;
+
+  for (let i = 1; i < parts.length; i++) {
+    const p = parts[i];
+    if (!p) continue;
+    if (isEmail(p)) { email = email || p; continue; }
+    if (isPhone(p)) { phone = phone || p; continue; }
+    if (!phone && !email && i === 1) { group = p; continue; }
+    if (i === 1) group = p;
+  }
+
+  if (!name || name.length < 2) issues.push("nome não detectado");
+  else if (!/[a-zA-ZÀ-ú]/.test(name)) issues.push("nome parece inválido");
+
+  return { raw: line, name, group, phone, email, issues, valid: issues.length === 0 };
+}
+
+function parseVcf(text: string): ParsedRow[] {
+  const cards = text.split(/END:VCARD/i).filter((c) => /BEGIN:VCARD/i.test(c));
+  return cards.map((card): ParsedRow => {
+    const name = card.match(/^FN:(.+)$/m)?.[1]?.trim() ?? card.match(/^N:([^;]+)/m)?.[1]?.trim() ?? "";
+    const phone = card.match(/^TEL[^:]*:(.+)$/m)?.[1]?.trim().replace(/\s/g, "") ?? "";
+    const email = card.match(/^EMAIL[^:]*:(.+)$/m)?.[1]?.trim() ?? "";
+    const issues = name.length < 2 ? ["nome não encontrado no contato"] : [];
+    return { raw: card.slice(0, 60), name, group: "Convidados importados", phone, email, issues, valid: issues.length === 0 };
+  });
+}
+
+function parseGuestText(text: string): ParsedRow[] {
+  if (/BEGIN:VCARD/i.test(text)) return parseVcf(text);
+  return text.split(/\n/).map((l) => l.trim()).filter(Boolean).map(parseLine);
+}
+
+// ─── ImportGuestSheet ─────────────────────────────────────────────────────────
+
+function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport: (rows: ParsedRow[]) => void }) {
   const [text, setText] = useState("");
-  const count = text.split(/\n/).filter((line) => line.trim()).length;
+  const [tab, setTab] = useState<"texto" | "vcf">("texto");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const rows = text.trim() ? parseGuestText(text) : [];
+  const valid = rows.filter((r) => r.valid).length;
+  const errors = rows.filter((r) => !r.valid).length;
+
+  function handleFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => setText(String(e.target?.result ?? ""));
+    reader.readAsText(file, "utf-8");
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="flex max-h-[92vh] w-full max-w-[430px] flex-col rounded-t-[32px] bg-casarei-surface shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
-        <div className="flex flex-none items-center justify-between p-5 pb-4">
+      <section className="flex max-h-[92vh] w-full max-w-[480px] flex-col rounded-t-[32px] bg-casarei-surface shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+
+        {/* header */}
+        <div className="flex flex-none items-center justify-between p-5 pb-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-casarei-pink">Lista</p>
             <h2 className="font-serif text-3xl text-casarei-text-primary">Importar convidados</h2>
           </div>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 pb-2">
-          <p className="text-sm leading-6 text-casarei-text-secondary">Cole uma lista simples, uma pessoa por linha. Use: nome, grupo, WhatsApp, email.</p>
-          <textarea value={text} onChange={(event) => setText(event.target.value)} rows={8} className="mt-4 w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none" />
+
+        {/* tabs */}
+        <div className="flex-none grid grid-cols-2 gap-1 px-5 pb-3">
+          <button type="button" onClick={() => setTab("texto")} className={tab === "texto" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
+            Colar lista
+          </button>
+          <button type="button" onClick={() => setTab("vcf")} className={tab === "vcf" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
+            Contatos / WhatsApp (.vcf)
+          </button>
         </div>
-        <div className="flex-none px-5 pb-5 pt-3">
-          <Button type="button" onClick={() => onImport(text)} className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Importar {count} convidados</Button>
+
+        {/* body */}
+        <div className="flex-1 overflow-y-auto px-5 pb-2 space-y-4">
+
+          {tab === "texto" ? (
+            <>
+              <div className="rounded-2xl bg-casarei-app p-4">
+                <p className="text-xs font-bold text-casarei-text-secondary mb-1">Formatos aceitos (um por linha):</p>
+                <p className="text-xs text-casarei-text-secondary leading-5">
+                  <b>Só o nome:</b> João Silva<br />
+                  <b>Com telefone:</b> João Silva, (11) 99999-9999<br />
+                  <b>Completo:</b> João Silva, Família da noiva, 11999999999, joao@email.com
+                </p>
+              </div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={6}
+                placeholder={"João Silva\nMaria Santos, Família da noiva\nCarlos, Amigos do noivo, (11) 98888-7777"}
+                className="w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none placeholder:font-normal placeholder:text-casarei-text-secondary"
+              />
+            </>
+          ) : (
+            <div className="rounded-2xl bg-casarei-app p-5 text-center space-y-3">
+              <p className="text-sm font-semibold text-casarei-text-primary">Como exportar seus contatos:</p>
+              <ol className="text-left text-xs leading-6 text-casarei-text-secondary space-y-1">
+                <li><b>Android:</b> Contatos → Menu → Exportar → Salvar como .vcf</li>
+                <li><b>iPhone:</b> Não exporta nativamente — use o app "Exportar Contatos"</li>
+                <li>O arquivo .vcf inclui nome e WhatsApp de cada contato</li>
+              </ol>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="mt-2 h-12 w-full rounded-2xl bg-casarei-pink text-sm font-bold text-white"
+              >
+                Selecionar arquivo .vcf
+              </button>
+              <input ref={fileRef} type="file" accept=".vcf,text/vcard" className="sr-only" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+              {text && <p className="text-xs font-semibold text-[#5F7752]">Arquivo carregado — veja o preview abaixo</p>}
+              {text && (
+                <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className="w-full resize-none rounded-xl bg-white p-3 text-xs text-casarei-text-secondary outline-none" />
+              )}
+            </div>
+          )}
+
+          {/* preview */}
+          {rows.length > 0 && (
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <p className="text-xs font-bold text-casarei-text-primary">{rows.length} linha{rows.length !== 1 ? "s" : ""} detectada{rows.length !== 1 ? "s" : ""}</p>
+                {errors > 0 && <span className="rounded-full bg-[#F8E7EC] px-2 py-0.5 text-[10px] font-bold text-casarei-pink">{errors} com erro</span>}
+                {valid > 0 && <span className="rounded-full bg-[#EEF3EA] px-2 py-0.5 text-[10px] font-bold text-[#5F7752]">{valid} válido{valid !== 1 ? "s" : ""}</span>}
+              </div>
+              <div className="overflow-hidden rounded-2xl ring-1 ring-casarei-border-soft">
+                {rows.map((row, i) => (
+                  <div
+                    key={i}
+                    className={`border-b border-casarei-border-soft px-4 py-3 last:border-b-0 ${row.valid ? "bg-white" : "bg-[#FEF6F8]"}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${row.valid ? "bg-[#EEF3EA] text-[#5F7752]" : "bg-[#F8E7EC] text-casarei-pink"}`}>
+                        {row.valid ? "✓" : "!"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        {row.valid ? (
+                          <>
+                            <p className="text-sm font-bold text-casarei-text-primary truncate">{row.name}</p>
+                            <p className="text-xs text-casarei-text-secondary">
+                              {row.group}{row.phone ? ` · ${row.phone}` : ""}{row.email ? ` · ${row.email}` : ""}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-semibold text-casarei-pink truncate">{row.raw}</p>
+                            <p className="text-xs text-casarei-pink">{row.issues.join(", ")}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* footer */}
+        <div className="flex-none px-5 pb-5 pt-3 space-y-2">
+          {errors > 0 && valid > 0 && (
+            <p className="text-center text-xs text-casarei-text-secondary">{errors} linha{errors !== 1 ? "s" : ""} com erro serão ignoradas.</p>
+          )}
+          <Button
+            type="button"
+            disabled={valid === 0}
+            onClick={() => onImport(rows)}
+            className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover disabled:opacity-50"
+          >
+            {valid > 0 ? `Importar ${valid} convidado${valid !== 1 ? "s" : ""}` : "Cole ou carregue uma lista"}
+          </Button>
         </div>
       </section>
     </div>
