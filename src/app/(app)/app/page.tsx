@@ -177,7 +177,7 @@ export default function DashboardPage() {
       {/* ── Stats rápidas ── */}
       <div className="grid grid-cols-3 gap-2">
         <StatPill value={String(guestCount)} label="convidados" />
-        <StatPill value={`${progressPct}%`} label="organizado" />
+        <StatPill value={`${stepsCompleted}/${STARTER_STEPS.length}`} label="primeiros passos" />
         <StatPill value={String(vendorCount)} label="fornecedores" />
       </div>
 
