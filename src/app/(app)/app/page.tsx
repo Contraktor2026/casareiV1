@@ -66,7 +66,7 @@ export default function DashboardPage() {
   const state = onboarding?.state || "UF";
   const guestCount = onboarding?.guestCount || 0;
   const plannedBudget = onboarding?.plannedBudget || "orçamento a definir";
-  const firstName = onboarding?.brideName || String(session?.user.user_metadata?.full_name ?? "").split(" ")[0] || "olá";
+  const firstName = onboarding?.brideName || String(session?.user?.user_metadata?.full_name ?? "").split(" ")[0] || "olá";
 
   function uploadBannerImage(file?: File) {
     if (!file) return;

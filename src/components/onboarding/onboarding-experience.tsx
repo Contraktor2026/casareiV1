@@ -52,7 +52,7 @@ export function OnboardingExperience() {
   useEffect(() => {
     const savedData = getOnboardingData();
     const session = getSession();
-    const fullName = String(session?.user.user_metadata?.full_name ?? "");
+    const fullName = String(session?.user?.user_metadata?.full_name ?? "");
 
     setData({
       ...initialData,

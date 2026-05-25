@@ -5,7 +5,7 @@ import type { OnboardingData } from "@/types/onboarding";
 
 export type CasareiSession = {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
   expires_at?: number;
   user: {
     id: string;
@@ -18,10 +18,16 @@ const sessionKey = "casarei.supabaseSession";
 const onboardingKey = "casarei.onboardingData";
 
 type AuthResponse = {
-  access_token: string;
-  refresh_token: string;
+  access_token?: string;
+  refresh_token?: string;
   expires_in?: number;
-  user: CasareiSession["user"];
+  user?: CasareiSession["user"];
+  session?: {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    user?: CasareiSession["user"];
+  } | null;
 };
 
 export async function signInWithEmail(email: string, password: string) {
@@ -37,11 +43,20 @@ export async function signUpWithEmail(email: string, password: string, fullName:
 }
 
 export function saveSession(response: AuthResponse) {
+  const accessToken = response.access_token ?? response.session?.access_token;
+  const refreshToken = response.refresh_token ?? response.session?.refresh_token;
+  const expiresIn = response.expires_in ?? response.session?.expires_in;
+  const user = response.user ?? response.session?.user;
+
+  if (!accessToken || !user?.id) {
+    throw new Error("Conta criada. Confirme seu email antes de entrar no Casarei.");
+  }
+
   const session: CasareiSession = {
-    access_token: response.access_token,
-    refresh_token: response.refresh_token,
-    expires_at: response.expires_in ? Math.floor(Date.now() / 1000) + response.expires_in : undefined,
-    user: response.user
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: expiresIn ? Math.floor(Date.now() / 1000) + expiresIn : undefined,
+    user
   };
 
   window.localStorage.setItem(sessionKey, JSON.stringify(session));
@@ -53,7 +68,12 @@ export function getSession(): CasareiSession | null {
   const raw = window.localStorage.getItem(sessionKey);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as CasareiSession;
+    const parsed = JSON.parse(raw) as Partial<CasareiSession>;
+    if (!parsed.access_token || !parsed.user?.id) {
+      clearSession();
+      return null;
+    }
+    return parsed as CasareiSession;
   } catch {
     return null;
   }
