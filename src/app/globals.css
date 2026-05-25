@@ -76,10 +76,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   @apply bg-background font-sans text-foreground antialiased;
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
@@ -96,6 +100,24 @@ body {
 }
 
 @layer components {
+  .mobile-safe-shell {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
+  }
+
+  .mobile-scroll-clean {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-scroll-clean::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
   .casarei-app-shell {
     @apply min-h-screen bg-casarei-app text-casarei-text-primary;
   }
@@ -126,6 +148,22 @@ body {
 
   .casarei-tab-active {
     @apply rounded-full bg-casarei-text-primary px-4 py-3 text-sm font-semibold text-white;
+  }
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    touch-action: manipulation;
   }
 }
 

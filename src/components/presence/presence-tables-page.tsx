@@ -36,13 +36,13 @@ export function PresenceTablesPage() {
   }, []);
 
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-28 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
-      <div className="mx-auto max-w-[980px]">
-        <section className="rounded-[30px] bg-white p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft md:p-7">
+    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
+      <div className="mx-auto w-full max-w-[460px] lg:max-w-[980px]">
+        <section className="rounded-[24px] bg-white p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft md:rounded-[30px] md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-casarei-pink">Presença & Mesas</p>
-              <h1 className="mt-2 font-serif text-4xl leading-tight text-casarei-text-primary md:text-5xl">Da confirmação ao lugar na festa</h1>
+              <h1 className="mt-2 font-serif text-3xl leading-tight text-casarei-text-primary sm:text-4xl md:text-5xl">Da confirmação ao lugar na festa</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-casarei-text-secondary">
                 Acompanhe quem confirmou, quem ainda precisa responder e organize nas mesas apenas quem está na lista.
               </p>

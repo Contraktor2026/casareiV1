@@ -44,7 +44,7 @@ export function GuestGroupPage({ slug }: { slug: string }) {
 
   if (!group) {
     return (
-      <main className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-24 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11">
+      <main className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11">
         <section className="mx-auto max-w-[430px] rounded-[28px] bg-casarei-surface p-6 text-center shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft">
           <h1 className="font-serif text-3xl text-casarei-text-primary">Grupo não encontrado</h1>
           <p className="mt-3 text-sm leading-7 text-casarei-text-secondary">Volte para convidados e escolha um grupo da lista.</p>
@@ -57,7 +57,7 @@ export function GuestGroupPage({ slug }: { slug: string }) {
   }
 
   return (
-    <main className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-28 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
+    <main className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
       <div className="mx-auto max-w-[430px] lg:max-w-[760px]">
         <GuestGroupHeader groupName={group.name} guests={guests} />
 

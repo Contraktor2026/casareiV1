@@ -194,7 +194,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
 
   return (
     <>
-      <div className="-mx-4 -mt-6 min-h-screen bg-[#F8F4F1] px-4 pb-28 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:py-8">
+      <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:py-8">
         <main className="mx-auto max-w-7xl space-y-5">
           <section className="rounded-[30px] bg-white p-5 shadow-[0_18px_55px_rgba(75,46,43,0.08)] ring-1 ring-[#EEE6E1] md:p-7">
             <button type="button" onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[#8A716D]">

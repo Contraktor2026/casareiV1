@@ -21,7 +21,7 @@ export function GuestTableDetailPage({ tableId }: { tableId: string }) {
   const suggestions = ["Bruno Santos", "Julia Rocha", "Diego Almeida", "Fernanda Costa"];
 
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-24 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
+    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
       <div className="mx-auto max-w-[430px] lg:max-w-[760px]">
         <header className="mb-4 flex h-12 items-center justify-between">
           <Link href="/app/presenca-mesas/mesas" className="grid h-10 w-10 place-items-center rounded-full text-casarei-text-primary" aria-label="Voltar">

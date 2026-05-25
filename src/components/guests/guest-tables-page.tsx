@@ -148,12 +148,12 @@ export function GuestTablesPage() {
   }
 
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-28 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
+    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
       <main className="mx-auto max-w-[430px] lg:max-w-[760px]">
         <SeatingHeader />
         <section className="mt-5">
-          <h2 className="font-serif text-5xl leading-[0.95] text-casarei-text-primary">Organize seus convidados com leveza</h2>
-          <p className="mt-4 text-lg leading-8 text-casarei-text-secondary">Veja quem ja tem mesa, quem ainda falta organizar e mova convidados com poucos toques.</p>
+          <h2 className="font-serif text-4xl leading-tight text-casarei-text-primary sm:text-5xl">Organize seus convidados com leveza</h2>
+          <p className="mt-3 text-base leading-7 text-casarei-text-secondary sm:text-lg">Veja quem ja tem mesa, quem ainda falta organizar e mova convidados com poucos toques.</p>
         </section>
 
         <SeatingStatsCard stats={stats} />
@@ -198,7 +198,6 @@ export function GuestTablesPage() {
         )}
       </main>
 
-      <MobileGuestNav />
       {selectedTable ? (
         <TableDetailsModal
           table={selectedTable}

@@ -22,7 +22,7 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto rounded-[22px] border border-[#e8dcd7] bg-[rgba(255,253,249,0.96)] p-2 shadow-[0_20px_50px_rgba(153,53,86,0.12)] backdrop-blur lg:hidden">
+    <nav className="mobile-scroll-clean fixed inset-x-3 bottom-3 z-50 flex gap-1 overflow-x-auto rounded-[22px] border border-[#e8dcd7] bg-[rgba(255,253,249,0.96)] p-2 shadow-[0_20px_50px_rgba(153,53,86,0.12)] backdrop-blur lg:hidden">
       {appNavigation.map((item) => {
         const Icon = icons[item.icon];
         const isActive = pathname === item.href || (item.href !== "/app" && pathname.startsWith(item.href));

@@ -363,8 +363,8 @@ export function VendorsPage() {
 
 function MobileFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-[#F8F4F1] px-4 pb-28 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11">
-      <div className="mx-auto max-w-[430px]">{children}</div>
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11">
+      <div className="mx-auto w-full max-w-[460px]">{children}</div>
     </div>
   );
 }

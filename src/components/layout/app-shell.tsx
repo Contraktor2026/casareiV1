@@ -79,7 +79,7 @@ export function AppShell({ children }: AppShellProps) {
       </aside>
 
       <div className="lg:ml-[250px]">
-        <main className="min-h-screen px-4 pb-32 pt-5 md:px-8 lg:px-11 lg:py-9">
+        <main className="mobile-safe-shell min-h-screen px-4 pt-5 md:px-8 lg:px-11 lg:py-9">
           <div className="mb-4 flex items-center justify-between gap-4 lg:justify-end">
             <div className="flex items-center gap-2 lg:hidden">
               <Heart className="h-6 w-6 text-[#d4537e]" strokeWidth={1.7} aria-hidden />
@@ -142,7 +142,7 @@ function MobileModuleRail({ pathname }: { pathname: string }) {
           Painel
         </Link>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="mobile-scroll-clean flex gap-2 overflow-x-auto pb-1">
         {sidebarItems.map((item) => (
           <Link
             key={item.href}

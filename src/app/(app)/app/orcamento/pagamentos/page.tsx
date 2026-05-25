@@ -59,7 +59,7 @@ export default function Page() {
   }
 
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-[#FFF8F4] pb-28 md:-mx-8 lg:-mx-11 lg:pb-12">
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#FFF8F4] pb-36 md:-mx-8 lg:-mx-11 lg:pb-12">
       <main className="mx-auto max-w-6xl space-y-5 px-4 pt-4 md:px-8 lg:px-11">
         <section className="rounded-[28px] bg-white p-5 shadow-[0_16px_42px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
           <Button asChild variant="outline" className="mb-4 h-10 rounded-full bg-white">

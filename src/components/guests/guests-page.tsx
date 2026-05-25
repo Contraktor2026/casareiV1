@@ -249,7 +249,7 @@ export function GuestsPage() {
   }
 
   return (
-    <div className="-mx-4 -mt-6 min-h-screen bg-casarei-app px-4 pb-24 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
+    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
       <div className="mx-auto max-w-[430px] lg:max-w-[760px]">
         <GuestTopBar
           onMenu={() => setNotice({ title: "Menu dos convidados", description: "Use as abas para navegar por resumo, lista e grupos. Confirmação e mesas ficam no módulo Presença & Mesas." })}
@@ -307,8 +307,6 @@ export function GuestsPage() {
         ) : null}
 
       </div>
-
-      <MobileGuestNav active={activeTab} onChange={setActiveTab} onAdd={() => setShowGuestForm(true)} />
 
       {selectedGuest ? (
         <GuestDetails
