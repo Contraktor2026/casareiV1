@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirmPermanentDelete } from "@/lib/client/confirm-delete";
 import { budgetPayments } from "@/lib/mock/budget";
+import { getOnboardingData } from "@/lib/client/supabase-auth";
 
 type TimelineTab = "Hoje" | "Linha do tempo" | "Agenda" | "Tarefas";
 type TaskStatus = "Pendente" | "Concluída" | "Atrasada";
@@ -233,6 +234,20 @@ export function ScheduleExperience() {
 function TimelinePage() {
   const [activeTab, setActiveTab] = useState<TimelineTab>("Hoje");
   const [tasks, setTasks] = useState<TimelineTask[]>(initialTasks);
+  const [brideName, setBrideName] = useState<string | null>(null);
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [weddingDateLabel, setWeddingDateLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ob = getOnboardingData();
+    if (ob?.brideName) setBrideName(ob.brideName);
+    if (ob?.weddingDate) {
+      const wedding = new Date(`${ob.weddingDate}T12:00:00`);
+      const diff = Math.ceil((wedding.getTime() - Date.now()) / 86_400_000);
+      setDaysLeft(Math.max(0, diff));
+      setWeddingDateLabel(new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" }).format(wedding));
+    }
+  }, []);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("Pendentes");
   const [query, setQuery] = useState("");
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -288,33 +303,37 @@ function TimelinePage() {
   }
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
-      <div className="mx-auto max-w-[430px] lg:max-w-[760px]">
-        <TopBar activeTab={activeTab} onHome={() => setActiveTab("Hoje")} />
-        <TimelineTabs
-          active={activeTab}
-          counts={{ pending: pendingTasks.length, delayed: delayedTasks.length, phases: phases.length }}
-          onChange={setActiveTab}
-        />
+    <div className="space-y-4 pb-4">
+      <TimelineTabs
+        active={activeTab}
+        counts={{ pending: pendingTasks.length, delayed: delayedTasks.length, phases: phases.length }}
+        onChange={setActiveTab}
+      />
 
-        {message ? (
-          <p className="mb-4 rounded-2xl bg-[#EEF3EA] px-4 py-3 text-sm font-semibold text-[#4B2E2B] shadow-sm ring-1 ring-[#DCE8D4]">
-            {message}
-          </p>
+      {message ? (
+        <p className="rounded-2xl bg-[#EEF3EA] px-4 py-3 text-sm font-semibold text-[#4B2E2B]">
+          {message}
+        </p>
+      ) : null}
+
+      <main>
+        {activeTab === "Hoje" ? (
+          <TimelineOverview
+            pendingCount={pendingTasks.length}
+            doneCount={doneTasks.length}
+            delayedCount={delayedTasks.length}
+            brideName={brideName}
+            daysLeft={daysLeft}
+            weddingDateLabel={weddingDateLabel}
+            progressPct={doneTasks.length + pendingTasks.length + delayedTasks.length > 0
+              ? Math.round((doneTasks.length / (doneTasks.length + pendingTasks.length + delayedTasks.length)) * 100)
+              : 0}
+            onTasks={() => setActiveTab("Tarefas")}
+            onTimeline={() => setActiveTab("Linha do tempo")}
+            onCalendar={openCalendar}
+            onSofia={() => setShowSofia(true)}
+          />
         ) : null}
-
-        <main>
-          {activeTab === "Hoje" ? (
-            <TimelineOverview
-              pendingCount={pendingTasks.length}
-              doneCount={doneTasks.length}
-              delayedCount={delayedTasks.length}
-              onTasks={() => setActiveTab("Tarefas")}
-              onTimeline={() => setActiveTab("Linha do tempo")}
-              onCalendar={openCalendar}
-              onSofia={() => setShowSofia(true)}
-            />
-          ) : null}
 
           {activeTab === "Linha do tempo" ? (
             <section className="space-y-4">
@@ -357,8 +376,7 @@ function TimelinePage() {
               onDelete={deleteTask}
             />
           ) : null}
-        </main>
-      </div>
+      </main>
 
       {selectedDay ? (
         <CalendarDayModal
@@ -454,6 +472,10 @@ function TimelineOverview({
   pendingCount,
   doneCount,
   delayedCount,
+  brideName,
+  daysLeft,
+  weddingDateLabel,
+  progressPct,
   onTasks,
   onTimeline,
   onCalendar,
@@ -462,27 +484,33 @@ function TimelineOverview({
   pendingCount: number;
   doneCount: number;
   delayedCount: number;
+  brideName: string | null;
+  daysLeft: number | null;
+  weddingDateLabel: string | null;
+  progressPct: number;
   onTasks: () => void;
   onTimeline: () => void;
   onCalendar: () => void;
   onSofia: () => void;
 }) {
+  const firstName = brideName ?? "você";
+
   return (
     <section className="space-y-4">
-      <div className="rounded-[30px] bg-[#FFFDFC] p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1] lg:p-8">
+      <div className="rounded-[30px] bg-[#FFFDFC] p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
         <div className="flex items-start justify-between gap-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D96C8A]">Hoje</p>
-            <h1 className="mt-3 font-serif text-4xl leading-tight text-[#4B2E2B] lg:text-6xl">O seu casamento está tomando forma</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#8A716D] lg:text-base">
-              Mari, você está na fase de consolidar fornecedores e organizar as decisões que dão segurança para os próximos meses.
+            <h1 className="mt-2 font-serif text-3xl leading-tight text-[#4B2E2B]">O seu casamento está tomando forma</h1>
+            <p className="mt-3 text-sm leading-6 text-[#8A716D]">
+              {firstName.charAt(0).toUpperCase() + firstName.slice(1)}, você está na fase de consolidar fornecedores e organizar as decisões que dão segurança para os próximos meses.
             </p>
           </div>
-          <Heart className="hidden h-8 w-8 shrink-0 text-[#D96C8A] sm:block" />
+          <Heart className="h-7 w-7 shrink-0 text-[#D96C8A]" />
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
-          <CounterCard />
+        <div className="mt-5 grid gap-3">
+          <CounterCard daysLeft={daysLeft} weddingDateLabel={weddingDateLabel} progressPct={progressPct} />
           <MonthlyFocus onTasks={onTasks} />
         </div>
       </div>
@@ -516,16 +544,20 @@ function TimelineOverview({
   );
 }
 
-function CounterCard() {
+function CounterCard({ daysLeft, weddingDateLabel, progressPct }: { daysLeft: number | null; weddingDateLabel: string | null; progressPct: number }) {
   return (
     <article className="rounded-[24px] bg-[#F8F4F1] p-5">
       <div className="flex items-center justify-between gap-5">
         <div>
-          <p className="text-sm font-bold text-[#4B2E2B]">Faltam 236 dias</p>
-          <p className="mt-2 text-xs leading-6 text-[#8A716D]">20 de dezembro de 2026</p>
+          <p className="text-sm font-bold text-[#4B2E2B]">
+            {daysLeft !== null ? `Faltam ${daysLeft} dias` : "Data não definida"}
+          </p>
+          {weddingDateLabel && (
+            <p className="mt-2 text-xs leading-6 text-[#8A716D]">{weddingDateLabel}</p>
+          )}
           <p className="mt-4 text-xs font-semibold text-[#8A716D]">do planejamento concluído</p>
         </div>
-        <TimelineProgress value={64} />
+        <TimelineProgress value={progressPct} />
       </div>
     </article>
   );

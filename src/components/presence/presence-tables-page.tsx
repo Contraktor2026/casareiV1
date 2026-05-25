@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck2, ChevronRight, Heart, Image as ImageIcon, MessageCircle, PenLine, Table2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { mockGuestsRich } from "@/lib/mock/guests";
-import { guestTables } from "@/lib/mock/guest-tables";
+import { getStoredGuests } from "@/lib/client/guests-store";
 import type { Guest, GuestRsvpStatus } from "@/types/guests";
 
 type PresenceTab = "Confirmação" | "Confirmados" | "Mesas";
@@ -15,29 +14,30 @@ const tabs: PresenceTab[] = ["Confirmação", "Confirmados", "Mesas"];
 
 export function PresenceTablesPage() {
   const [activeTab, setActiveTab] = useState<PresenceTab>("Confirmação");
+  const [guests, setGuests] = useState<Guest[]>([]);
+
+  useEffect(() => {
+    setGuests(getStoredGuests());
+  }, []);
 
   const stats = useMemo(() => {
-    const confirmed = mockGuestsRich.filter((guest) => guest.rsvp.status === "confirmed");
-    const pending = mockGuestsRich.filter((guest) => guest.rsvp.status === "pending" || guest.rsvp.status === "viewed");
-    const declined = mockGuestsRich.filter((guest) => guest.rsvp.status === "declined");
-    const seated = confirmed.filter((guest) => Boolean(guest.table.name));
-    const totalSeats = guestTables.reduce((sum, table) => sum + table.capacity, 0);
-    const occupiedSeats = guestTables.reduce((sum, table) => sum + table.guests.length, 0);
+    const confirmed = guests.filter((guest) => guest.rsvp.status === "confirmed");
+    const pending = guests.filter((guest) => guest.rsvp.status === "pending" || guest.rsvp.status === "viewed");
+    const declined = guests.filter((guest) => guest.rsvp.status === "declined");
 
     return {
       confirmed,
       pending,
       declined,
-      seated,
-      totalSeats,
-      occupiedSeats,
+      totalSeats: 0,
+      occupiedSeats: 0,
       waitingForTable: confirmed.filter((guest) => !guest.table.name)
     };
-  }, []);
+  }, [guests]);
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-casarei-app px-4 pb-36 pt-4 md:-mx-8 md:px-8 lg:-mx-11 lg:px-11 lg:pb-12">
-      <div className="mx-auto w-full max-w-[460px] lg:max-w-[980px]">
+    <div className="space-y-4 pb-4">
+      <div>
         <section className="rounded-[24px] bg-white p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft md:rounded-[30px] md:p-7">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
@@ -76,7 +76,7 @@ export function PresenceTablesPage() {
         <main className="mt-5">
           {activeTab === "Confirmação" ? <ConfirmationPanel pendingCount={stats.pending.length} /> : null}
           {activeTab === "Confirmados" ? <ConfirmedPanel confirmed={stats.confirmed} pending={stats.pending} declined={stats.declined} /> : null}
-          {activeTab === "Mesas" ? <TablesPanel waitingForTable={stats.waitingForTable} occupiedSeats={stats.occupiedSeats} totalSeats={stats.totalSeats} /> : null}
+          {activeTab === "Mesas" ? <TablesPanel waitingForTable={stats.waitingForTable} occupiedSeats={stats.occupiedSeats} totalSeats={stats.totalSeats} pendingSeated={stats.confirmed.filter((guest) => !guest.table.name && guest.rsvp.status !== "confirmed").length} /> : null}
         </main>
       </div>
     </div>
@@ -158,10 +158,7 @@ function ConfirmedPanel({ confirmed, pending, declined }: { confirmed: Guest[]; 
   );
 }
 
-function TablesPanel({ waitingForTable, occupiedSeats, totalSeats }: { waitingForTable: Guest[]; occupiedSeats: number; totalSeats: number }) {
-  const nearlyFullTables = guestTables.filter((table) => table.capacity - table.guests.length <= 2 && table.guests.length < table.capacity);
-  const fullTables = guestTables.filter((table) => table.guests.length >= table.capacity);
-  const pendingSeated = mockGuestsRich.filter((guest) => guest.table.name && guest.rsvp.status !== "confirmed");
+function TablesPanel({ waitingForTable, occupiedSeats, totalSeats, pendingSeated }: { waitingForTable: Guest[]; occupiedSeats: number; totalSeats: number; pendingSeated: number }) {
 
   return (
     <section className="space-y-4">
@@ -180,9 +177,8 @@ function TablesPanel({ waitingForTable, occupiedSeats, totalSeats }: { waitingFo
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <PresenceMetric label="Ocupação" value={`${occupiedSeats}/${totalSeats}`} tone="neutral" />
           <PresenceMetric label="Sem mesa" value={waitingForTable.length} tone="danger" />
-          <PresenceMetric label="Mesas" value={guestTables.length} tone="ok" />
+          <PresenceMetric label="Confirmados" value={waitingForTable.length === 0 && occupiedSeats === 0 ? 0 : occupiedSeats} tone="ok" />
         </div>
       </div>
 
@@ -199,9 +195,7 @@ function TablesPanel({ waitingForTable, occupiedSeats, totalSeats }: { waitingFo
 
         <div className="mt-5 grid gap-3">
           <TableAlert tone="danger" title={`${waitingForTable.length} confirmado(s) ainda sem mesa`} text="Antes de finalizar o mapa, coloque esses convidados em uma mesa." />
-          <TableAlert tone="warn" title={`${nearlyFullTables.length} mesa(s) quase cheias`} text="Revise a capacidade antes de adicionar acompanhantes ou famílias grandes." />
-          <TableAlert tone="warn" title={`${pendingSeated.length} convidado(s) pendente(s) já aparecem em mesas`} text="Confirme presença antes de considerar esses lugares como definitivos." />
-          <TableAlert tone="ok" title={`${fullTables.length} mesa(s) completas`} text="Essas mesas parecem prontas, mas ainda vale revisar restrições alimentares." />
+          <TableAlert tone="warn" title={`${pendingSeated} convidado(s) confirmado(s) sem lugar definido`} text="Confirme presença antes de considerar esses lugares como definitivos." />
         </div>
 
         <Button asChild className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-dark">
