@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardList,
   MapPin,
+  Scale,
   Sparkles,
   Store,
   Users,
@@ -181,6 +182,26 @@ export default function DashboardPage() {
         <StatPill value={String(vendorCount)} label="fornecedores" />
       </div>
 
+      {/* ── Destaque: Cotações com IA ── */}
+      <Link
+        href="/app/cotacoes"
+        className="flex items-center gap-4 rounded-[22px] p-5 ring-1 ring-transparent active:scale-[0.98] transition"
+        style={{
+          background: "linear-gradient(135deg, #2A1A1F 0%, #72243E 60%, #D4537E 100%)",
+          boxShadow: "0 10px 32px rgba(212,83,126,0.28)",
+        }}
+      >
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-white/15">
+          <Sparkles className="h-6 w-6 text-white" strokeWidth={1.8} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">Inteligência artificial</p>
+          <p className="mt-0.5 font-serif text-[19px] leading-snug text-white">Compare orçamentos com Sofia</p>
+          <p className="mt-1 text-xs text-white/65">Importe propostas e a IA analisa o melhor para você</p>
+        </div>
+        <ArrowRight className="h-5 w-5 shrink-0 text-white/60" />
+      </Link>
+
       {/* ── Acesso rápido ── */}
       <section>
         <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Acesso rápido</h2>
@@ -282,6 +303,7 @@ export default function DashboardPage() {
             { title: "Fornecedores", sub: "Contratos, pagamentos e cotações", href: "/app/fornecedores", icon: Store },
             { title: "Financeiro", sub: "Orçamento, categorias e projeções", href: "/app/orcamento", icon: Wallet },
             { title: "Agenda", sub: "Cronograma mensal e tarefas", href: "/app/cronograma", icon: CheckSquare },
+            { title: "Cotações", sub: "Compare propostas com IA e feche fornecedores", href: "/app/cotacoes", icon: Scale },
           ].map((mod) => (
             <Link
               key={mod.href}

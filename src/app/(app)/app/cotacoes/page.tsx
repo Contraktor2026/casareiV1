@@ -3,9 +3,10 @@
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Crown, FileImage, FileText, Heart, Keyboard, Lock, Star, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileImage, FileText, Heart, Keyboard, Sparkles, Star, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SofiaQuotePanel } from "@/components/vendors/sofia-quote-panel";
 import { saveVendorFinancePayment } from "@/lib/client/vendor-finance-sync";
 import { upsertStoredVendor } from "@/lib/client/vendors-store";
 import { mockQuoteProposals, quoteCategories, quoteCategoryGuides } from "@/lib/mock/quotes";
@@ -99,6 +100,7 @@ export default function QuotesPage() {
   const [message, setMessage] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [showSofia, setShowSofia] = useState(false);
   const [closingProposal, setClosingProposal] = useState<QuoteProposal | null>(null);
   const [newCategory, setNewCategory] = useState("");
 
@@ -359,13 +361,14 @@ export default function QuotesPage() {
                   {categoryGuide?.description ?? "Compare valor, entrega, prazo e pontos de atenção antes de decidir."}
                 </p>
               </div>
-              <Button type="button" onClick={() => setMessage("Comparar orçamentos é um recurso Premium. Assine para liberar a comparação completa.")} className="h-12 rounded-2xl bg-[linear-gradient(135deg,#2a1a1f,#d4537e)] text-white">
-                <Crown className="h-4 w-4" />
-                Comparar orçamentos
-                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-white/18 px-2 py-1 text-[11px]">
-                  <Lock className="h-3 w-3" />
-                  Premium
-                </span>
+              <Button
+                type="button"
+                onClick={() => setShowSofia(true)}
+                disabled={activeProposals.length < 1}
+                className="h-12 rounded-2xl bg-[linear-gradient(135deg,#2a1a1f,#d4537e)] text-white disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4" />
+                Sofia compara
               </Button>
             </div>
 
@@ -400,6 +403,18 @@ export default function QuotesPage() {
 
       {showManualForm ? <ManualQuoteModal category={activeCategory} onClose={() => setShowManualForm(false)} onSave={addManualProposal} /> : null}
       {closingProposal ? <CloseVendorPaymentModal proposal={closingProposal} onClose={() => setClosingProposal(null)} onConfirm={(plan) => closeVendor(closingProposal, plan)} /> : null}
+      <SofiaQuotePanel
+        open={showSofia}
+        category={activeCategory}
+        proposals={activeProposals}
+        onClose={() => setShowSofia(false)}
+        onFavorite={toggleFavorite}
+        onShowDetails={() => setShowSofia(false)}
+        onCloseVendor={(proposal) => {
+          setShowSofia(false);
+          setClosingProposal(proposal);
+        }}
+      />
     </div>
   );
 }
