@@ -29,8 +29,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirmPermanentDelete } from "@/lib/client/confirm-delete";
 import { getStoredPendingCategories, getStoredVendors, saveStoredPendingCategories, upsertStoredVendor } from "@/lib/client/vendors-store";
-import { mockQuoteProposals } from "@/lib/mock/quotes";
-import { mockVendorsFull } from "@/lib/mock/vendors";
 import type { QuoteProposal } from "@/types/quotes";
 import type { Vendor, VendorStatus } from "@/types/vendors";
 import { SofiaQuotePanel } from "./sofia-quote-panel";
@@ -62,10 +60,10 @@ function money(value: number) {
 
 export function VendorsPage() {
   const router = useRouter();
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendorsFull);
-  const [proposals, setProposals] = useState<QuoteProposal[]>(mockQuoteProposals);
-  const [activeTab, setActiveTab] = useState<VendorsTab>("Já fechados");
-  const [pendingCategories, setPendingCategories] = useState(initialPendingCategories);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [proposals, setProposals] = useState<QuoteProposal[]>([]);
+  const [activeTab, setActiveTab] = useState<VendorsTab>("Todos");
+  const [pendingCategories, setPendingCategories] = useState<string[]>([]);
   const [pendingDetail, setPendingDetail] = useState<string | null>(null);
   const [newPendingCategory, setNewPendingCategory] = useState("");
   const [showPendingCategoryForm, setShowPendingCategoryForm] = useState(false);
@@ -80,11 +78,9 @@ export function VendorsPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const storedVendors = getStoredVendors();
-    if (storedVendors.length) setVendors(mergeVendors(storedVendors, mockVendorsFull));
-
+    setVendors(getStoredVendors());
     const storedCategories = getStoredPendingCategories();
-    if (storedCategories.length) setPendingCategories(mergeCategories(storedCategories, initialPendingCategories));
+    setPendingCategories(storedCategories.length ? storedCategories : initialPendingCategories);
   }, []);
 
   const closedVendors = useMemo(
@@ -1320,15 +1316,6 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function mergeVendors(primary: Vendor[], fallback: Vendor[]) {
-  const ids = new Set(primary.map((vendor) => vendor.id));
-  return [...primary, ...fallback.filter((vendor) => !ids.has(vendor.id))];
-}
-
-function mergeCategories(primary: string[], fallback: string[]) {
-  const normalized = new Set(primary.map((category) => category.toLowerCase()));
-  return [...primary, ...fallback.filter((category) => !normalized.has(category.toLowerCase()))];
-}
 
 function filterLabel(label: string) {
   return label === "Cotando" ? "Orçando" : label;

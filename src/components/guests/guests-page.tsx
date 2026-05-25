@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
-  CheckCircle2,
   ChevronRight,
   Clock3,
   Heart,
-  Home,
   Mail,
   Menu,
   MessageCircle,
@@ -30,8 +28,8 @@ import {
   saveRsvpSettings,
   type StoredRsvpSettings
 } from "@/lib/client/guests-rsvp-store";
+import { getStoredGuests, saveStoredGuests } from "@/lib/client/guests-store";
 import { slugifyGroup, type GuestGroupTone } from "@/lib/guests/groups";
-import { mockGuestsRich } from "@/lib/mock/guests";
 import type { Guest, GuestRsvpStatus } from "@/types/guests";
 import { getGuestName } from "./guest-helpers";
 
@@ -51,15 +49,7 @@ type GuestFormData = {
   notes: string;
 };
 
-const groupCards = [
-  { name: "Família dos noivos", count: 68, confirmed: 54, pending: 31, tone: "green" },
-  { name: "Família da noiva", count: 52, confirmed: 21, pending: 24, tone: "pink" },
-  { name: "Família do noivo", count: 45, confirmed: 18, pending: 19, tone: "blue" },
-  { name: "Amigos da noiva", count: 38, confirmed: 15, pending: 12, tone: "purple" },
-  { name: "Amigos do noivo", count: 26, confirmed: 10, pending: 9, tone: "terracotta" },
-  { name: "Trabalho", count: 19, confirmed: 8, pending: 7, tone: "blue" },
-  { name: "Amigos do casal", count: 64, confirmed: 25, pending: 21, tone: "green" }
-];
+const groupTones = ["green", "pink", "blue", "purple", "terracotta"] as const;
 
 const defaultGuestGroups = [
   "Família dos noivos",
@@ -76,8 +66,9 @@ const defaultGuestGroups = [
 ];
 
 export function GuestsPage() {
+  const initialized = useRef(false);
   const [activeTab, setActiveTab] = useState<GuestTab>("Resumo");
-  const [guests, setGuests] = useState(mockGuestsRich);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<GuestListFilter>("Todos");
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
@@ -91,51 +82,34 @@ export function GuestsPage() {
   const [notice, setNotice] = useState<{ title: string; description: string } | null>(null);
   const [recentlyAddedId, setRecentlyAddedId] = useState("");
 
-  function syncRsvpResponses(showMessage = true) {
+
+  useEffect(() => {
+    const stored = getStoredGuests();
     const responses = getStoredRsvpResponses();
-    setGuests((current) =>
-      current.map((guest) => {
-        const response = responses.find((item) => item.token === guest.rsvp.token);
+    if (responses.length && stored.length) {
+      setGuests(stored.map((guest) => {
+        const response = responses.find((r) => r.token === guest.rsvp.token);
         if (!response) return guest;
         return {
           ...guest,
-          rsvp: {
-            ...guest.rsvp,
-            status: response.status,
-            viewed: true,
-            responded: true,
-            respondedAt: response.respondedAt,
-            lastInteraction: response.status === "confirmed" ? "Confirmou presença" : "Respondeu que não poderá ir"
-          },
-          companions: {
-            ...guest.companions,
-            confirmedCount: response.companionNames.length,
-            names: response.companionNames
-          },
-          children: {
-            ...guest.children,
-            count: response.children,
-            names: Array.from({ length: response.children }, (_, index) => ({ name: `Criança ${index + 1}`, age: 0 }))
-          },
-          food: {
-            ...guest.food,
-            buffetNotes: response.food,
-            vegetarian: response.food.toLowerCase().includes("vegetar"),
-            intolerance: response.food
-          },
+          rsvp: { ...guest.rsvp, status: response.status, viewed: true, responded: true, respondedAt: response.respondedAt, lastInteraction: response.status === "confirmed" ? "Confirmou presença" : "Respondeu que não poderá ir" },
+          companions: { ...guest.companions, confirmedCount: response.companionNames.length, names: response.companionNames },
+          children: { ...guest.children, count: response.children, names: Array.from({ length: response.children }, (_, i) => ({ name: `Criança ${i + 1}`, age: 0 })) },
+          food: { ...guest.food, buffetNotes: response.food, vegetarian: response.food.toLowerCase().includes("vegetar"), intolerance: response.food },
           notes: response.note
         };
-      })
-    );
-    if (showMessage) {
-      setMessage(responses.length ? `${responses.length} resposta(s) sincronizada(s) com a lista.` : "Ainda nao ha novas respostas de confirmação de presença.");
+      }));
+    } else {
+      setGuests(stored);
     }
-  }
+    setRsvpSettings(getStoredRsvpSettings());
+    initialized.current = true;
+  }, []);
 
   useEffect(() => {
-    setRsvpSettings(getStoredRsvpSettings());
-    syncRsvpResponses(false);
-  }, []);
+    if (!initialized.current) return;
+    saveStoredGuests(guests);
+  }, [guests]);
 
   const filteredGuests = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -300,6 +274,7 @@ export function GuestsPage() {
 
         {activeTab === "Grupos" ? (
           <GuestGroups
+            guests={guests}
             onCreate={() => setShowGroupForm(true)}
           />
         ) : null}
@@ -551,7 +526,41 @@ function GuestRow({ guest, highlighted, onOpen }: { guest: Guest; highlighted?: 
   );
 }
 
-function GuestGroups({ onCreate }: { onCreate: () => void }) {
+function GuestGroups({ guests, onCreate }: { guests: Guest[]; onCreate: () => void }) {
+  const groupCards = useMemo(() => {
+    const map = new Map<string, { count: number; confirmed: number; pending: number }>();
+    for (const guest of guests) {
+      if (!guest.group) continue;
+      const entry = map.get(guest.group) ?? { count: 0, confirmed: 0, pending: 0 };
+      entry.count++;
+      if (guest.rsvp.status === "confirmed") entry.confirmed++;
+      else entry.pending++;
+      map.set(guest.group, entry);
+    }
+    return Array.from(map.entries()).map(([name, data], index) => ({
+      name,
+      count: data.count,
+      confirmed: data.count > 0 ? Math.round((data.confirmed / data.count) * 100) : 0,
+      pending: data.pending,
+      tone: groupTones[index % groupTones.length]
+    }));
+  }, [guests]);
+
+  if (!groupCards.length) {
+    return (
+      <section className="space-y-3">
+        <div className="rounded-[24px] bg-casarei-surface p-6 text-center shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft">
+          <UsersRound className="mx-auto h-10 w-10 text-casarei-pink opacity-40" />
+          <p className="mt-3 text-sm font-semibold text-casarei-text-secondary">Nenhum grupo ainda. Adicione convidados com grupo para visualizá-los aqui.</p>
+        </div>
+        <Button type="button" onClick={onCreate} variant="outline" className="h-12 w-full border-[#F3C7D2] text-casarei-pink">
+          <Plus className="h-4 w-4" />
+          Criar novo grupo
+        </Button>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-3">
       {groupCards.map((group) => <GroupCard key={group.name} group={group} />)}
@@ -563,7 +572,9 @@ function GuestGroups({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-function GroupCard({ group }: { group: (typeof groupCards)[number] }) {
+type GroupCardData = { name: string; count: number; confirmed: number; pending: number; tone: string };
+
+function GroupCard({ group }: { group: GroupCardData }) {
   return (
     <Link href={`/app/convidados/grupos/${slugifyGroup(group.name)}`} className="group block w-full rounded-[24px] bg-casarei-surface p-4 text-left shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_52px_rgba(75,46,43,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-casarei-pink">
       <div className="flex items-center gap-3">
@@ -637,122 +648,7 @@ function ReviewBlock({ title, guests, empty, onOpen }: { title: string; guests: 
   );
 }
 
-function TablesIntro() {
-  return (
-    <section className="space-y-4">
-      <div className="rounded-[28px] bg-casarei-surface p-5 text-center shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft">
-        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-casarei-pink-soft text-casarei-pink">
-          <UsersRound className="h-6 w-6" />
-        </span>
-        <h2 className="mt-4 font-serif text-3xl text-casarei-text-primary">Organização das mesas</h2>
-        <p className="mt-3 text-sm leading-7 text-casarei-text-secondary">
-          A visualização completa das mesas fica em uma página própria para manter esta tela leve.
-        </p>
-        <Button asChild className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">
-          <Link href="/app/presenca-mesas">Abrir Presença & Mesas</Link>
-        </Button>
-      </div>
-    </section>
-  );
-}
 
-function RsvpPreview({
-  guests,
-  settings,
-  onCustomize,
-  onOpenGuest,
-  onSynced
-}: {
-  guests: Guest[];
-  settings: StoredRsvpSettings;
-  onCustomize: () => void;
-  onOpenGuest: (guest: Guest) => void;
-  onSynced: () => void;
-}) {
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
-  const [restriction, setRestriction] = useState("Vegetariana");
-  const [answer, setAnswer] = useState<"yes" | "no" | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const visibleGuests = guests.slice(0, 4);
-
-  return (
-    <section className="space-y-4">
-      <div className="rounded-[30px] bg-casarei-surface p-5 text-center shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-casarei-border-soft">
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-casarei-pink-soft font-serif text-2xl text-casarei-pink">{settings.initials}</div>
-        <h2 className="mt-5 font-serif text-3xl text-casarei-text-primary">{settings.greeting}</h2>
-        <p className="mt-2 text-sm leading-7 text-casarei-text-secondary">{settings.message}</p>
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <Button type="button" onClick={() => setAnswer("yes")} className={answer === "yes" ? "h-16 bg-casarei-pink hover:bg-casarei-pink-hover" : "h-16 bg-casarei-pink/80 hover:bg-casarei-pink-hover"}>Sim, vou!</Button>
-          <Button type="button" onClick={() => setAnswer("no")} variant="outline" className={answer === "no" ? "h-16 border-casarei-pink bg-casarei-pink-soft text-casarei-pink" : "h-16 border-[#F3C7D2] text-casarei-pink"}>Nao poderei ir</Button>
-        </div>
-        {settings.allowCompanions ? <Counter label="Adultos" value={adults} onMinus={() => setAdults(Math.max(1, adults - 1))} onPlus={() => setAdults(adults + 1)} /> : null}
-        {settings.allowChildren ? <Counter label="Crianças" value={children} onMinus={() => setChildren(Math.max(0, children - 1))} onPlus={() => setChildren(children + 1)} /> : null}
-        {settings.askFood ? (
-          <label className="mt-4 block rounded-2xl bg-casarei-app p-4 text-left">
-            <span className="text-xs font-bold text-casarei-text-primary">Restrição alimentar</span>
-            <select value={restriction} onChange={(event) => setRestriction(event.target.value)} className="mt-2 h-10 w-full bg-transparent text-sm text-casarei-text-primary outline-none">
-              <option>Vegetariana</option>
-              <option>Lactose</option>
-              <option>Frutos do mar</option>
-              <option>Nenhuma</option>
-            </select>
-          </label>
-        ) : null}
-        <textarea placeholder="Conte pra gente algo importante..." className="mt-4 min-h-[92px] w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm text-casarei-text-primary outline-none" />
-        <Button type="button" onClick={() => answer && setSubmitted(true)} className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">{settings.buttonText}</Button>
-        {submitted ? <p className="mt-3 rounded-2xl bg-casarei-green-soft px-4 py-3 text-xs font-bold text-[#5F7752]">Previa enviada. A confirmação de presença real fica salva quando o convidado usa o link individual.</p> : null}
-      </div>
-
-      <section className="rounded-[26px] bg-casarei-surface p-5 shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-casarei-text-primary">Personalização da confirmação de presença</h2>
-            <p className="mt-1 text-xs leading-5 text-casarei-text-secondary">Ajuste texto, campos e convite antes de enviar.</p>
-          </div>
-          <Button type="button" onClick={onCustomize} variant="outline" className="border-[#F3C7D2] text-casarei-pink">Personalizar</Button>
-        </div>
-      </section>
-
-      <section className="rounded-[26px] bg-casarei-surface p-5 shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-casarei-text-primary">Links dos convidados</h2>
-          <button
-            type="button"
-            onClick={() => {
-              onSynced();
-              window.location.reload();
-            }}
-            className="text-xs font-bold text-casarei-pink"
-          >
-            Sincronizar
-          </button>
-        </div>
-        <div className="mt-4 space-y-2">
-          {visibleGuests.map((guest) => (
-            <button key={guest.id} type="button" onClick={() => onOpenGuest(guest)} className="flex w-full items-center justify-between gap-3 rounded-2xl bg-casarei-app px-4 py-3 text-left">
-              <span>
-                <span className="block text-sm font-bold text-casarei-text-primary">{getGuestName(guest)}</span>
-                <span className="mt-1 block text-xs text-casarei-text-secondary">/rsvp/{guest.rsvp.token}</span>
-              </span>
-              <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${rsvpTone(guest.rsvp.status)}`}>{rsvpLabel(guest.rsvp.status)}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-    </section>
-  );
-}
-
-function Counter({ label, value, onMinus, onPlus }: { label: string; value: number; onMinus: () => void; onPlus: () => void }) {
-  return (
-    <div className="mt-4 flex items-center justify-between rounded-2xl bg-casarei-app p-4">
-      <button type="button" onClick={onMinus} className="grid h-8 w-8 place-items-center rounded-full bg-casarei-surface text-casarei-pink">-</button>
-      <p className="text-sm font-bold text-casarei-text-primary">{value} {label}</p>
-      <button type="button" onClick={onPlus} className="grid h-8 w-8 place-items-center rounded-full bg-casarei-surface text-casarei-pink">+</button>
-    </div>
-  );
-}
 
 function RsvpSettingsSheet({
   settings,
@@ -919,7 +815,7 @@ function AddGuestSheet({ onClose, onSave }: { onClose: () => void; onSave: (data
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="w-full max-w-[430px] rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-3xl text-casarei-text-primary">Adicionar convidado</h2>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
@@ -968,7 +864,7 @@ function EditGuestSheet({ guest, onClose, onSave }: { guest: Guest; onClose: () 
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="w-full max-w-[430px] rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-3xl text-casarei-text-primary">Editar convidado</h2>
           <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
@@ -993,12 +889,12 @@ function EditGuestSheet({ guest, onClose, onSave }: { guest: Guest; onClose: () 
 }
 
 function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport: (text: string) => void }) {
-  const [text, setText] = useState("Maria Souza, Familia da noiva, 11999990000\nCarlos Lima, Amigos, 11988880000");
+  const [text, setText] = useState("");
   const count = text.split(/\n/).filter((line) => line.trim()).length;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="w-full max-w-[430px] rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
+      <section className="max-h-[92vh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-casarei-pink">Lista</p>
@@ -1014,27 +910,6 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
   );
 }
 
-function GroupDetailsSheet({ group, onClose, onAdd }: { group: (typeof groupCards)[number]; onClose: () => void; onAdd: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 p-0 lg:place-items-center lg:p-6">
-      <section className="w-full max-w-[430px] rounded-t-[32px] bg-casarei-surface p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] ring-1 ring-casarei-border-soft lg:rounded-[32px]">
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-3xl text-casarei-text-primary">{group.name}</h2>
-          <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-casarei-app" aria-label="Fechar"><X className="h-5 w-5" /></button>
-        </div>
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <TableMetricMini value={String(group.count)} label="convidados" />
-          <TableMetricMini value={`${group.confirmed}%`} label="confirmados" />
-          <TableMetricMini value={String(group.pending)} label="pendentes" tone="attention" />
-        </div>
-        <p className="mt-5 rounded-2xl bg-casarei-pink-soft p-4 text-sm leading-6 text-casarei-text-primary">
-          Sofia sugere enviar um lembrete carinhoso para quem ainda nao respondeu antes de fechar buffet e mesas.
-        </p>
-        <Button type="button" onClick={onAdd} className="mt-5 h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover">Adicionar convidado ao grupo</Button>
-      </section>
-    </div>
-  );
-}
 
 function CreateGroupSheet({ onClose, onSave }: { onClose: () => void; onSave: (name: string) => void }) {
   const [name, setName] = useState("");
@@ -1079,34 +954,6 @@ function SheetInput({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-function TableMetricMini({ value, label, tone }: { value: string; label: string; tone?: "attention" }) {
-  return (
-    <article className={tone === "attention" ? "rounded-2xl bg-[#FBEEE8] p-3 text-center" : "rounded-2xl bg-casarei-app p-3 text-center"}>
-      <p className="font-serif text-2xl text-casarei-text-primary">{value}</p>
-      <p className="mt-1 text-[11px] leading-4 text-casarei-text-secondary">{label}</p>
-    </article>
-  );
-}
-
-function MobileGuestNav({ active, onChange, onAdd }: { active: GuestTab; onChange: (tab: GuestTab) => void; onAdd: () => void }) {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 items-end border-t border-casarei-border-soft bg-casarei-surface px-5 pb-3 pt-2 text-[10px] font-semibold text-casarei-text-secondary shadow-[0_-12px_40px_rgba(75,46,43,0.08)] lg:hidden">
-      <BottomItem icon={<Home />} label="Início" active={active === "Resumo"} onClick={() => onChange("Resumo")} />
-      <BottomItem icon={<CalendarIcon />} label="Lista" active={active === "Lista"} onClick={() => onChange("Lista")} />
-      <button type="button" onClick={onAdd} className="mx-auto grid h-12 w-12 -translate-y-3 place-items-center rounded-full bg-casarei-pink text-white shadow-[0_10px_30px_rgba(217,108,138,0.35)]" aria-label="Adicionar convidado"><Plus className="h-6 w-6" /></button>
-      <BottomItem icon={<UsersRound />} label="Grupos" active={active === "Grupos"} onClick={() => onChange("Grupos")} />
-      <BottomItem icon={<Clock3 />} label="Revisar" active={active === "Revisar dados"} onClick={() => onChange("Revisar dados")} />
-    </nav>
-  );
-}
-
-function BottomItem({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className={active ? "grid justify-items-center gap-1 text-casarei-pink [&>svg]:h-4 [&>svg]:w-4" : "grid justify-items-center gap-1 [&>svg]:h-4 [&>svg]:w-4"}>{icon}<span>{label}</span></button>;
-}
-
-function CalendarIcon() {
-  return <UsersRound className="h-4 w-4" />;
-}
 
 function Avatar({ name, large = false }: { name: string; large?: boolean }) {
   return <span className={`${large ? "mx-auto h-20 w-20 text-2xl" : "h-11 w-11 text-sm"} grid shrink-0 place-items-center rounded-full bg-casarei-pink-soft font-serif font-bold text-casarei-pink`}>{name.slice(0, 1)}</span>;
