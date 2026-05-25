@@ -899,19 +899,72 @@ function parseGuestText(text: string): ParsedRow[] {
 
 // ─── ImportGuestSheet ─────────────────────────────────────────────────────────
 
-function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport: (rows: ParsedRow[]) => void }) {
-  const [text, setText] = useState("");
-  const [tab, setTab] = useState<"texto" | "vcf">("texto");
-  const fileRef = useRef<HTMLInputElement>(null);
+function contactPickerSupported(): boolean {
+  return typeof navigator !== "undefined" && "contacts" in navigator && "ContactsManager" in window;
+}
 
-  const rows = text.trim() ? parseGuestText(text) : [];
+function fromContactApi(contacts: Array<{ name?: string[]; tel?: string[]; email?: string[] }>): ParsedRow[] {
+  return contacts.map((c): ParsedRow => {
+    const name = c.name?.[0]?.trim() ?? "";
+    const phone = c.tel?.[0]?.replace(/\s/g, "") ?? "";
+    const email = c.email?.[0]?.trim() ?? "";
+    const issues = name.length < 2 ? ["nome não encontrado no contato"] : [];
+    return { raw: name, name, group: "Convidados importados", phone, email, issues, valid: issues.length === 0 };
+  });
+}
+
+function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport: (rows: ParsedRow[]) => void }) {
+  const [tab, setTab] = useState<"texto" | "agenda">("texto");
+  const [text, setText] = useState("");
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [picking, setPicking] = useState(false);
+  const [agendaError, setAgendaError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const supportsContactApi = contactPickerSupported();
+
   const valid = rows.filter((r) => r.valid).length;
   const errors = rows.filter((r) => !r.valid).length;
 
-  function handleFile(file: File) {
+  // Re-parse whenever text changes (only for "texto" tab)
+  useEffect(() => {
+    if (tab === "texto") {
+      setRows(text.trim() ? parseGuestText(text) : []);
+    }
+  }, [text, tab]);
+
+  async function pickFromAgenda() {
+    setAgendaError("");
+    setPicking(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const contacts = await (navigator as any).contacts.select(
+        ["name", "tel", "email"],
+        { multiple: true }
+      );
+      const parsed = fromContactApi(contacts ?? []);
+      setRows(parsed);
+      if (parsed.length === 0) setAgendaError("Nenhum contato selecionado.");
+    } catch {
+      setAgendaError("Não foi possível abrir a agenda. Verifique se o navegador tem permissão.");
+    } finally {
+      setPicking(false);
+    }
+  }
+
+  function handleVcfFile(file: File) {
     const reader = new FileReader();
-    reader.onload = (e) => setText(String(e.target?.result ?? ""));
+    reader.onload = (e) => {
+      const content = String(e.target?.result ?? "");
+      setRows(parseGuestText(content));
+    };
     reader.readAsText(file, "utf-8");
+  }
+
+  function switchTab(next: "texto" | "agenda") {
+    setTab(next);
+    setRows([]);
+    setText("");
+    setAgendaError("");
   }
 
   return (
@@ -929,25 +982,25 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
 
         {/* tabs */}
         <div className="flex-none grid grid-cols-2 gap-1 px-5 pb-3">
-          <button type="button" onClick={() => setTab("texto")} className={tab === "texto" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
+          <button type="button" onClick={() => switchTab("texto")} className={tab === "texto" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
             Colar lista
           </button>
-          <button type="button" onClick={() => setTab("vcf")} className={tab === "vcf" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
-            Contatos / WhatsApp (.vcf)
+          <button type="button" onClick={() => switchTab("agenda")} className={tab === "agenda" ? "rounded-xl bg-casarei-pink py-2 text-xs font-bold text-white" : "rounded-xl bg-casarei-app py-2 text-xs font-bold text-casarei-text-secondary"}>
+            Agenda do celular
           </button>
         </div>
 
         {/* body */}
         <div className="flex-1 overflow-y-auto px-5 pb-2 space-y-4">
 
-          {tab === "texto" ? (
+          {tab === "texto" && (
             <>
               <div className="rounded-2xl bg-casarei-app p-4">
                 <p className="text-xs font-bold text-casarei-text-secondary mb-1">Formatos aceitos (um por linha):</p>
                 <p className="text-xs text-casarei-text-secondary leading-5">
                   <b>Só o nome:</b> João Silva<br />
                   <b>Com telefone:</b> João Silva, (11) 99999-9999<br />
-                  <b>Completo:</b> João Silva, Família da noiva, 11999999999, joao@email.com
+                  <b>Completo:</b> João Silva, Família da noiva, 11999999999
                 </p>
               </div>
               <textarea
@@ -958,25 +1011,60 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
                 className="w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none placeholder:font-normal placeholder:text-casarei-text-secondary"
               />
             </>
-          ) : (
-            <div className="rounded-2xl bg-casarei-app p-5 text-center space-y-3">
-              <p className="text-sm font-semibold text-casarei-text-primary">Como exportar seus contatos:</p>
-              <ol className="text-left text-xs leading-6 text-casarei-text-secondary space-y-1">
-                <li><b>Android:</b> Contatos → Menu → Exportar → Salvar como .vcf</li>
-                <li><b>iPhone:</b> Não exporta nativamente — use o app "Exportar Contatos"</li>
-                <li>O arquivo .vcf inclui nome e WhatsApp de cada contato</li>
-              </ol>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="mt-2 h-12 w-full rounded-2xl bg-casarei-pink text-sm font-bold text-white"
-              >
-                Selecionar arquivo .vcf
-              </button>
-              <input ref={fileRef} type="file" accept=".vcf,text/vcard" className="sr-only" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-              {text && <p className="text-xs font-semibold text-[#5F7752]">Arquivo carregado — veja o preview abaixo</p>}
-              {text && (
-                <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className="w-full resize-none rounded-xl bg-white p-3 text-xs text-casarei-text-secondary outline-none" />
+          )}
+
+          {tab === "agenda" && (
+            <div className="space-y-3">
+              {supportsContactApi ? (
+                /* Contact Picker API — Android Chrome */
+                <div className="rounded-2xl bg-casarei-app p-5 text-center space-y-3">
+                  <div className="grid h-14 w-14 mx-auto place-items-center rounded-2xl bg-[#EEF3EA]">
+                    <UsersRound className="h-7 w-7 text-[#5F7752]" />
+                  </div>
+                  <p className="text-sm font-semibold text-casarei-text-primary">
+                    Selecione contatos direto da sua agenda
+                  </p>
+                  <p className="text-xs text-casarei-text-secondary leading-5">
+                    O app abrirá a lista de contatos do seu celular.<br />
+                    Selecione quantos quiser — nome e telefone entram automaticamente.
+                  </p>
+                  {agendaError && (
+                    <p className="rounded-xl bg-[#F8E7EC] px-3 py-2 text-xs font-semibold text-casarei-pink">{agendaError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={pickFromAgenda}
+                    disabled={picking}
+                    className="h-12 w-full rounded-2xl bg-casarei-pink text-sm font-bold text-white disabled:opacity-60"
+                  >
+                    {picking ? "Abrindo agenda…" : rows.length > 0 ? `${rows.length} contato(s) selecionado(s) — selecionar mais` : "Abrir agenda do celular"}
+                  </button>
+                </div>
+              ) : (
+                /* Fallback: VCF file upload */
+                <div className="rounded-2xl bg-casarei-app p-5 space-y-3">
+                  <p className="text-sm font-semibold text-casarei-text-primary">Exportar contatos como arquivo .vcf</p>
+                  <p className="text-xs text-casarei-text-secondary leading-5">
+                    Seu navegador não suporta acesso direto à agenda (funciona no Chrome do Android).
+                    Exporte seus contatos como .vcf e importe aqui:
+                  </p>
+                  <div className="rounded-xl bg-white p-3 space-y-1">
+                    <p className="text-xs font-bold text-casarei-text-primary">Android</p>
+                    <p className="text-xs text-casarei-text-secondary">Contatos → ⋮ → Exportar → Salvar como .vcf</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3 space-y-1">
+                    <p className="text-xs font-bold text-casarei-text-primary">iPhone</p>
+                    <p className="text-xs text-casarei-text-secondary">Use o app gratuito "Exportar Contatos" na App Store</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="h-12 w-full rounded-2xl bg-casarei-pink text-sm font-bold text-white"
+                  >
+                    Selecionar arquivo .vcf
+                  </button>
+                  <input ref={fileRef} type="file" accept=".vcf,text/vcard" className="sr-only" onChange={(e) => e.target.files?.[0] && handleVcfFile(e.target.files[0])} />
+                </div>
               )}
             </div>
           )}
@@ -985,16 +1073,13 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
           {rows.length > 0 && (
             <div>
               <div className="mb-2 flex items-center gap-3">
-                <p className="text-xs font-bold text-casarei-text-primary">{rows.length} linha{rows.length !== 1 ? "s" : ""} detectada{rows.length !== 1 ? "s" : ""}</p>
+                <p className="text-xs font-bold text-casarei-text-primary">{rows.length} contato{rows.length !== 1 ? "s" : ""}</p>
                 {errors > 0 && <span className="rounded-full bg-[#F8E7EC] px-2 py-0.5 text-[10px] font-bold text-casarei-pink">{errors} com erro</span>}
                 {valid > 0 && <span className="rounded-full bg-[#EEF3EA] px-2 py-0.5 text-[10px] font-bold text-[#5F7752]">{valid} válido{valid !== 1 ? "s" : ""}</span>}
               </div>
               <div className="overflow-hidden rounded-2xl ring-1 ring-casarei-border-soft">
                 {rows.map((row, i) => (
-                  <div
-                    key={i}
-                    className={`border-b border-casarei-border-soft px-4 py-3 last:border-b-0 ${row.valid ? "bg-white" : "bg-[#FEF6F8]"}`}
-                  >
+                  <div key={i} className={`border-b border-casarei-border-soft px-4 py-3 last:border-b-0 ${row.valid ? "bg-white" : "bg-[#FEF6F8]"}`}>
                     <div className="flex items-start gap-3">
                       <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${row.valid ? "bg-[#EEF3EA] text-[#5F7752]" : "bg-[#F8E7EC] text-casarei-pink"}`}>
                         {row.valid ? "✓" : "!"}
@@ -1025,7 +1110,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
         {/* footer */}
         <div className="flex-none px-5 pb-5 pt-3 space-y-2">
           {errors > 0 && valid > 0 && (
-            <p className="text-center text-xs text-casarei-text-secondary">{errors} linha{errors !== 1 ? "s" : ""} com erro serão ignoradas.</p>
+            <p className="text-center text-xs text-casarei-text-secondary">{errors} com erro serão ignorados</p>
           )}
           <Button
             type="button"
@@ -1033,7 +1118,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
             onClick={() => onImport(rows)}
             className="h-12 w-full bg-casarei-pink hover:bg-casarei-pink-hover disabled:opacity-50"
           >
-            {valid > 0 ? `Importar ${valid} convidado${valid !== 1 ? "s" : ""}` : "Cole ou carregue uma lista"}
+            {valid > 0 ? `Importar ${valid} convidado${valid !== 1 ? "s" : ""}` : "Selecione ou cole uma lista"}
           </Button>
         </div>
       </section>
