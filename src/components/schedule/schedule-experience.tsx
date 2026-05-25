@@ -25,6 +25,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { confirmPermanentDelete } from "@/lib/client/confirm-delete";
+import { addPlanTask, deletePlanTask, getStoredPlanTasks, updatePlanTaskStatus, upsertPlanTask } from "@/lib/client/planning-store";
 import { budgetPayments } from "@/lib/mock/budget";
 import { getOnboardingData } from "@/lib/client/supabase-auth";
 
@@ -233,7 +234,7 @@ export function ScheduleExperience() {
 
 function TimelinePage() {
   const [activeTab, setActiveTab] = useState<TimelineTab>("Hoje");
-  const [tasks, setTasks] = useState<TimelineTask[]>(initialTasks);
+  const [tasks, setTasks] = useState<TimelineTask[]>([]);
   const [brideName, setBrideName] = useState<string | null>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [weddingDateLabel, setWeddingDateLabel] = useState<string | null>(null);
@@ -247,6 +248,8 @@ function TimelinePage() {
       setDaysLeft(Math.max(0, diff));
       setWeddingDateLabel(new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" }).format(wedding));
     }
+    const planTasks = getStoredPlanTasks();
+    setTasks(planTasks.length > 0 ? (planTasks as TimelineTask[]) : initialTasks);
   }, []);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("Pendentes");
   const [query, setQuery] = useState("");
@@ -275,6 +278,7 @@ function TimelinePage() {
 
   function completeTask(id: string) {
     setTasks((current) => current.map((task) => (task.id === id ? { ...task, status: "Concluída" } : task)));
+    updatePlanTaskStatus(id, "Concluída");
     setMessage("Tarefa concluída. O cronograma ficou um pouco mais leve.");
   }
 
@@ -282,15 +286,20 @@ function TimelinePage() {
     const task = tasks.find((item) => item.id === id);
     if (!confirmPermanentDelete({ itemName: task?.title ?? "esta tarefa", context: "Ela será excluída do cronograma." })) return;
     setTasks((current) => current.filter((task) => task.id !== id));
+    deletePlanTask(id);
     setMessage("Tarefa removida.");
   }
 
   function saveTask(task: Omit<TimelineTask, "id" | "kind"> & { id?: string }) {
     if (task.id) {
+      const full = { ...task, id: task.id, kind: "manual" as const };
       setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, ...task } : item)));
+      upsertPlanTask(full);
       setMessage("Tarefa atualizada.");
     } else {
-      setTasks((current) => [{ ...task, id: `manual-${Date.now()}`, kind: "manual" }, ...current]);
+      const full: TimelineTask = { ...task, id: `manual-${Date.now()}`, kind: "manual" };
+      setTasks((current) => [full, ...current]);
+      addPlanTask(full);
       setMessage("Nova tarefa adicionada.");
     }
     setEditingTask(null);

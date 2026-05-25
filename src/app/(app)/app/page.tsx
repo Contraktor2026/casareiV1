@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getOnboardingData, getSession } from "@/lib/client/supabase-auth";
 import { getStoredGuests } from "@/lib/client/guests-store";
+import { getStoredPlanTasks, type PlanTask } from "@/lib/client/planning-store";
 import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
 
@@ -61,11 +62,20 @@ export default function DashboardPage() {
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   const [guestCount, setGuestCount] = useState(0);
   const [vendorCount, setVendorCount] = useState(0);
+  const [nextTask, setNextTask] = useState<PlanTask | null>(null);
 
   useEffect(() => {
     setOnboarding(getOnboardingData());
     setGuestCount(getStoredGuests().length);
     setVendorCount(getStoredVendors().length);
+    const planTasks = getStoredPlanTasks();
+    const pending = planTasks.filter((t) => t.status === "Pendente" || t.status === "Atrasada");
+    pending.sort((a, b) => {
+      if (a.status === "Atrasada" && b.status !== "Atrasada") return -1;
+      if (b.status === "Atrasada" && a.status !== "Atrasada") return 1;
+      return a.dueDateIso.localeCompare(b.dueDateIso);
+    });
+    setNextTask(pending[0] ?? null);
   }, []);
 
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -181,6 +191,27 @@ export default function DashboardPage() {
         <StatPill value={`${stepsCompleted}/${STARTER_STEPS.length}`} label="primeiros passos" />
         <StatPill value={String(vendorCount)} label="fornecedores" />
       </div>
+
+      {/* ── Próxima tarefa do planejamento ── */}
+      {nextTask && (
+        <Link
+          href="/app/cronograma"
+          className="flex items-start gap-3 rounded-[20px] bg-white px-4 py-4 ring-1 ring-[#EEE6E1] active:scale-[0.98] transition"
+          style={{ boxShadow: "0 4px 18px rgba(75,46,43,0.06)" }}
+        >
+          <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-[10px] font-bold ${nextTask.status === "Atrasada" ? "bg-[#F8E7EC] text-[#D96C8A]" : "bg-[#F0EAE4] text-[#8A716D]"}`}>
+            {nextTask.status === "Atrasada" ? "!" : "→"}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${nextTask.status === "Atrasada" ? "text-[#D96C8A]" : "text-[#8A716D]"}`}>
+              {nextTask.status === "Atrasada" ? "Atrasada" : "Próxima tarefa"} · {nextTask.category}
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-[#4B2E2B]">{nextTask.title}</p>
+            <p className="mt-0.5 text-xs text-[#8A716D]">{nextTask.dueDate}</p>
+          </div>
+          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#C4B0AA]" />
+        </Link>
+      )}
 
       {/* ── Destaque: Cotações com IA ── */}
       <Link

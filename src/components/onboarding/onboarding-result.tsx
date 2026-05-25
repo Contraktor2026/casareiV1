@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
 import { CalendarHeart, CheckCircle2, MapPin, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { generateAndStorePlan } from "@/lib/client/planning-store";
 import type { OnboardingData } from "@/types/onboarding";
 
 type OnboardingResultProps = {
@@ -10,6 +14,11 @@ type OnboardingResultProps = {
 };
 
 export function OnboardingResult({ data, onBack }: OnboardingResultProps) {
+  useEffect(() => {
+    if (data.weddingDate && data.vendorTypes.length > 0) {
+      generateAndStorePlan(data);
+    }
+  }, [data]);
   const bride = data.brideName || "Mari";
   const partner = data.partnerName || "seu amor";
 

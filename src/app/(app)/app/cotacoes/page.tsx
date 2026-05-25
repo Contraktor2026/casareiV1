@@ -1,12 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, FileImage, FileText, Heart, Keyboard, Sparkles, Star, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SofiaQuotePanel } from "@/components/vendors/sofia-quote-panel";
+import { getStoredVendorCategories } from "@/lib/client/planning-store";
 import { saveVendorFinancePayment } from "@/lib/client/vendor-finance-sync";
 import { upsertStoredVendor } from "@/lib/client/vendors-store";
 import { mockQuoteProposals, quoteCategories, quoteCategoryGuides } from "@/lib/mock/quotes";
@@ -94,6 +95,7 @@ function money(value: number) {
 
 export default function QuotesPage() {
   const router = useRouter();
+  const [priorityCategories, setPriorityCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<QuoteCategory>("Fotografia");
   const [categories, setCategories] = useState<QuoteCategory[]>([...quoteCategories, ...extraQuoteCategories]);
   const [proposals, setProposals] = useState<QuoteProposal[]>(mockQuoteProposals);
@@ -103,6 +105,20 @@ export default function QuotesPage() {
   const [showSofia, setShowSofia] = useState(false);
   const [closingProposal, setClosingProposal] = useState<QuoteProposal | null>(null);
   const [newCategory, setNewCategory] = useState("");
+
+  useEffect(() => {
+    const vendorCategories = getStoredVendorCategories();
+    if (vendorCategories.length === 0) return;
+    setPriorityCategories(vendorCategories);
+    // Merge: priority categories first, then the rest (no duplicates)
+    const allCategories = [...quoteCategories, ...extraQuoteCategories];
+    const merged: QuoteCategory[] = [
+      ...vendorCategories.filter((c): c is QuoteCategory => true),
+      ...allCategories.filter((c) => !vendorCategories.includes(c)),
+    ];
+    setCategories(merged);
+    setActiveCategory((vendorCategories[0] as QuoteCategory) ?? "Fotografia");
+  }, []);
 
   const activeProposals = proposals.filter((proposal) => proposal.category === activeCategory);
   const favorites = proposals.filter((proposal) => proposal.isFavorite);
@@ -332,7 +348,12 @@ export default function QuotesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-bold text-[#2A1A1F]">{summary.category}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-[#2A1A1F]">{summary.category}</p>
+                      {priorityCategories.includes(summary.category) && (
+                        <span className="rounded-full bg-[#D4537E] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Planejado</span>
+                      )}
+                    </div>
                     <p className="mt-1 text-xs text-[#8A716D]">{summary.count} proposta(s)</p>
                   </div>
                   <StatusPill status={summary.status} />
