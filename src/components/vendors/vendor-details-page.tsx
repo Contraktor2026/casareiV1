@@ -490,13 +490,14 @@ function MenuRow({
   );
 }
 
-function SubHeader({ title, onBack }: { title: string; onBack: () => void }) {
+function SubHeader({ title, onBack, action }: { title: string; onBack: () => void; action?: React.ReactNode }) {
   return (
     <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-4 pt-5 md:px-8 lg:px-11">
       <button type="button" onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full bg-[#FFFDFC] ring-1 ring-[#EEE6E1]" aria-label="Voltar">
         <ArrowLeft className="h-4 w-4 text-[#4B2E2B]" />
       </button>
-      <h1 className="font-serif text-2xl text-[#4B2E2B]">{title}</h1>
+      <h1 className="min-w-0 flex-1 truncate font-serif text-2xl text-[#4B2E2B]">{title}</h1>
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }
@@ -815,8 +816,16 @@ function ContratoView({
   }
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Contrato" onBack={onBack} />
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-6 md:-mx-8 lg:-mx-11">
+      <SubHeader
+        title="Contrato"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={onSave} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
+            Salvar
+          </Button>
+        }
+      />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
         <label className="block rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
@@ -864,9 +873,6 @@ function ContratoView({
           </button>
           <input ref={contractFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={handleContractFile} />
         </div>
-      </div>
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={onSave} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">Salvar contrato</Button>
       </div>
     </div>
   );
@@ -939,8 +945,16 @@ function PacoteView({
   savedMessage: string;
 }) {
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Pacote contratado" onBack={onBack} />
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-6 md:-mx-8 lg:-mx-11">
+      <SubHeader
+        title="Pacote contratado"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={onSave} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
+            Salvar
+          </Button>
+        }
+      />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
@@ -953,9 +967,6 @@ function PacoteView({
             placeholder="Ex: Álbum 30x30&#10;2 fotógrafos&#10;Edição em até 60 dias"
           />
         </div>
-      </div>
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={onSave} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">Salvar pacote</Button>
       </div>
     </div>
   );
@@ -978,8 +989,16 @@ function ObservacoesView({
   const igHandle = draft.instagram.replace("@", "").trim();
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Observações" onBack={onBack} />
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-6 md:-mx-8 lg:-mx-11">
+      <SubHeader
+        title="Observações"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={onSave} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
+            Salvar
+          </Button>
+        }
+      />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
         {igHandle && !igImgError && (
@@ -1011,9 +1030,6 @@ function ObservacoesView({
             placeholder="Observações importantes sobre este fornecedor"
           />
         </div>
-      </div>
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={onSave} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">Salvar observações</Button>
       </div>
     </div>
   );
