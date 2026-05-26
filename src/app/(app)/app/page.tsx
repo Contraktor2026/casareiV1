@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
   CalendarDays,
   CheckSquare,
   ChevronRight,
@@ -61,12 +60,12 @@ function getDailyTip(): string {
 }
 
 const MODULE_CARDS: { title: string; sub: string; href: string; icon: ElementType; bg: string; iconColor: string }[] = [
-  { title: "Convidados", sub: "Lista, grupos e confirmações", href: "/app/convidados", icon: Users, bg: "#EEF1F4", iconColor: "#6E7F91" },
-  { title: "Presença & Mesas", sub: "Check-in e acomodações", href: "/app/presenca-mesas", icon: ClipboardList, bg: "#EDEAF7", iconColor: "#7B68C8" },
+  { title: "Orçamentos", sub: "Compare propostas com IA e feche o melhor", href: "/app/cotacoes", icon: Scale, bg: "#2A1A1F", iconColor: "#F3A8C2" },
   { title: "Fornecedores", sub: "Contratos e pagamentos", href: "/app/fornecedores", icon: Store, bg: "#EEF3EA", iconColor: "#5F7752" },
+  { title: "Convidados", sub: "Lista, grupos e confirmações", href: "/app/convidados", icon: Users, bg: "#EEF1F4", iconColor: "#6E7F91" },
   { title: "Financeiro", sub: "Orçamento e categorias", href: "/app/orcamento", icon: Wallet, bg: "#F8E7EC", iconColor: "#D96C8A" },
   { title: "Agenda", sub: "Cronograma e tarefas", href: "/app/cronograma", icon: CheckSquare, bg: "#FBEEE8", iconColor: "#B96F52" },
-  { title: "Cotações", sub: "Compare propostas com IA", href: "/app/cotacoes", icon: Scale, bg: "#F5EDE8", iconColor: "#9A5C3B" },
+  { title: "Presença & Mesas", sub: "Check-in e acomodações", href: "/app/presenca-mesas", icon: ClipboardList, bg: "#EDEAF7", iconColor: "#7B68C8" },
 ];
 
 function getDaysLeft(dateStr: string | undefined): number | null {
@@ -304,47 +303,32 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* ── Destaque: Cotações com IA ── */}
-      <Link
-        href="/app/cotacoes"
-        className="flex items-center gap-4 rounded-[22px] p-5 ring-1 ring-transparent active:scale-[0.98] transition"
-        style={{
-          background: "linear-gradient(135deg, #2A1A1F 0%, #72243E 60%, #D4537E 100%)",
-          boxShadow: "0 10px 32px rgba(212,83,126,0.28)",
-        }}
-      >
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-white/15">
-          <Sparkles className="h-6 w-6 text-white" strokeWidth={1.8} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/55">Inteligência artificial</p>
-          <p className="mt-0.5 font-serif text-[19px] leading-snug text-white">Compare orçamentos com Sofia</p>
-          <p className="mt-1 text-xs text-white/65">Importe propostas e a IA analisa o melhor para você</p>
-        </div>
-        <ArrowRight className="h-5 w-5 shrink-0 text-white/60" />
-      </Link>
-
       {/* ── Módulos ── */}
       <section>
         <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Módulos</h2>
         <div className="grid grid-cols-2 gap-3">
           {MODULE_CARDS.map((mod) => {
             const Icon = mod.icon;
+            const dark = mod.bg.startsWith("#2") || mod.bg.startsWith("#1") || mod.bg.startsWith("#3");
             return (
               <Link
                 key={mod.href}
                 href={mod.href}
-                className="flex flex-col rounded-[22px] bg-white p-4 ring-1 ring-[#EEE6E1] transition active:scale-[0.97]"
-                style={{ boxShadow: "0 4px 18px rgba(75,46,43,0.07)" }}
+                className="flex flex-col rounded-[22px] p-4 transition active:scale-[0.97]"
+                style={{
+                  background: dark ? mod.bg : "#fff",
+                  boxShadow: dark ? "0 8px 28px rgba(42,26,31,0.30)" : "0 4px 18px rgba(75,46,43,0.07)",
+                  outline: dark ? "none" : "1px solid #EEE6E1",
+                }}
               >
                 <span
                   className="grid h-11 w-11 place-items-center rounded-[14px]"
-                  style={{ background: mod.bg }}
+                  style={{ background: dark ? "rgba(255,255,255,0.12)" : mod.bg }}
                 >
                   <Icon className="h-5 w-5" style={{ color: mod.iconColor }} strokeWidth={1.8} />
                 </span>
-                <p className="mt-3 font-serif text-base leading-snug text-[#4B2E2B]">{mod.title}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-[#8A716D]">{mod.sub}</p>
+                <p className={`mt-3 font-serif text-base leading-snug ${dark ? "text-white" : "text-[#4B2E2B]"}`}>{mod.title}</p>
+                <p className={`mt-0.5 text-[11px] leading-snug ${dark ? "text-white/60" : "text-[#8A716D]"}`}>{mod.sub}</p>
               </Link>
             );
           })}
