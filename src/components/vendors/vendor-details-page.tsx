@@ -363,6 +363,13 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
               onClick={() => setView("tarefas")}
             />
             <MenuRow
+              icon={<Wallet className="h-4 w-4 text-[#D28B6E]" />}
+              label="Financeiro"
+              badge={payments.length > 0 ? `${payments.length} lançamento${payments.length === 1 ? "" : "s"}` : undefined}
+              badgeClass="text-[#D28B6E]"
+              onClick={() => setView("financeiro")}
+            />
+            <MenuRow
               icon={<FileText className="h-4 w-4 text-[#5F7752]" />}
               label="Contrato"
               badge={currentVendor.contract.signed ? "Assinado" : currentVendor.contract.sent ? "Enviado" : "Pendente"}
