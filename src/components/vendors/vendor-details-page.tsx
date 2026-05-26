@@ -814,7 +814,7 @@ function FinanceView({
   }
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-10 md:-mx-8 lg:-mx-11">
       <SubHeader title="Financeiro" onBack={onBack} />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
 
@@ -837,6 +837,16 @@ function FinanceView({
               className="mt-1 h-11 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-4 text-sm font-semibold text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
             />
           </label>
+        </div>
+
+        {/* Ações */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" onClick={() => onAddPayment("contract")} className="h-11 rounded-xl bg-[#D96C8A] text-sm font-semibold hover:bg-[#C85D7B]">
+            <Plus className="h-4 w-4" />Pagamento
+          </Button>
+          <Button type="button" onClick={() => onAddPayment("extra")} variant="outline" className="h-11 rounded-xl border-[#D96C8A] bg-white text-sm font-semibold text-[#D96C8A] hover:bg-[#FFF4F7]">
+            <Plus className="h-4 w-4" />Despesa extra
+          </Button>
         </div>
 
         {/* Plano de pagamento */}
@@ -897,16 +907,6 @@ function FinanceView({
           </div>
         )}
 
-      </div>
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <div className="grid grid-cols-2 gap-2">
-          <Button type="button" onClick={() => onAddPayment("contract")} className="h-13 rounded-xl bg-[#D96C8A] py-3.5 text-sm font-semibold hover:bg-[#C85D7B]">
-            <Plus className="h-4 w-4" />Pagamento
-          </Button>
-          <Button type="button" onClick={() => onAddPayment("extra")} variant="outline" className="h-13 rounded-xl border-[#D96C8A] bg-white py-3.5 text-sm font-semibold text-[#D96C8A] hover:bg-[#FFF4F7]">
-            <Plus className="h-4 w-4" />Despesa extra
-          </Button>
-        </div>
       </div>
       {modal}
     </div>
