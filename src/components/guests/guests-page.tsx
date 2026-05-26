@@ -957,8 +957,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
     setAgendaError("");
     setPicking(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const contacts = await (navigator as any).contacts.select(
+      const contacts = await (navigator as unknown as { contacts: { select: (fields: string[], opts: { multiple: boolean }) => Promise<Array<{ name?: string[]; tel?: string[]; email?: string[] }>> } }).contacts.select(
         ["name", "tel", "email"],
         { multiple: true }
       );
@@ -1100,7 +1099,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
                   </div>
                   <div className="rounded-xl bg-white p-3 space-y-1">
                     <p className="text-xs font-bold text-casarei-text-primary">iPhone</p>
-                    <p className="text-xs text-casarei-text-secondary">Use o app gratuito "Exportar Contatos" na App Store</p>
+                    <p className="text-xs text-casarei-text-secondary">Use o app gratuito &ldquo;Exportar Contatos&rdquo; na App Store</p>
                   </div>
                   <button
                     type="button"
