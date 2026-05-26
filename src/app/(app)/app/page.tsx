@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  AlertCircle,
   CalendarDays,
   CheckSquare,
   ChevronRight,
@@ -12,8 +13,8 @@ import {
   Store,
   Users,
   Wallet,
+  X,
 } from "lucide-react";
-import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { getOnboardingData, getSession, getUserId, saveOnboardingData } from "@/lib/client/supabase-auth";
@@ -22,6 +23,8 @@ import { getBudgetAllocation, getStoredPlanTasks } from "@/lib/client/planning-s
 import { getStoredProposals } from "@/lib/client/quotes-store";
 import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
+
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 const DAILY_TIPS = [
   "Dica: Feche os principais fornecedores com pelo menos 8 meses de antecedência — espaços e fotógrafos esgotam rápido.",
@@ -59,14 +62,20 @@ function getDailyTip(): string {
   return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
 }
 
-const MODULE_CARDS: { title: string; sub: string; href: string; icon: ElementType; bg: string; iconColor: string }[] = [
-  { title: "Orçamentos", sub: "Compare propostas com IA e feche o melhor", href: "/app/cotacoes", icon: Scale, bg: "#2A1A1F", iconColor: "#F3A8C2" },
-  { title: "Fornecedores", sub: "Contratos e pagamentos", href: "/app/fornecedores", icon: Store, bg: "#EEF3EA", iconColor: "#5F7752" },
-  { title: "Convidados", sub: "Lista, grupos e confirmações", href: "/app/convidados", icon: Users, bg: "#EEF1F4", iconColor: "#6E7F91" },
-  { title: "Financeiro", sub: "Orçamento e categorias", href: "/app/orcamento", icon: Wallet, bg: "#F8E7EC", iconColor: "#D96C8A" },
-  { title: "Agenda", sub: "Cronograma e tarefas", href: "/app/cronograma", icon: CheckSquare, bg: "#FBEEE8", iconColor: "#B96F52" },
-  { title: "Presença & Mesas", sub: "Check-in e acomodações", href: "/app/presenca-mesas", icon: ClipboardList, bg: "#EDEAF7", iconColor: "#7B68C8" },
-];
+function parseBudgetRange(range: string): number {
+  const nums = (range.match(/\d+/g) ?? []).map(Number);
+  if (nums.length === 0) return 0;
+  const thousands = range.toLowerCase().includes("mil") ? 1000 : 1;
+  if (nums.length === 1) return nums[0] * thousands;
+  return Math.round((nums[0] + nums[1]) / 2) * thousands;
+}
+
+function formatBRL(n: number): string {
+  if (n >= 1000) {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(n);
+  }
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
+}
 
 function getDaysLeft(dateStr: string | undefined): number | null {
   if (!dateStr) return null;
@@ -82,32 +91,164 @@ function formatDate(dateStr: string): string {
   );
 }
 
+// ── types ─────────────────────────────────────────────────────────────────────
+
+type DashStats = {
+  guestsTotal: number;
+  guestsConfirmed: number;
+  vendorsTotal: number;
+  vendorsClosed: number;
+  vendorsPendingContract: number;
+  tasksPending: number;
+  tasksOverdue: number;
+  nextTask: { title: string; dueDate: string } | null;
+  budgetTotal: number;
+  budgetCommitted: number;
+  proposalsCount: number;
+  paymentsOverdue: { vendorName: string; amount: number }[];
+  paymentsSoon: { vendorName: string; amount: number; daysLeft: number }[];
+};
+
+type Alert = { label: string; sub: string; href: string; severity: "critical" | "warning" };
+
+function computeAlert(s: DashStats): Alert | null {
+  if (s.paymentsOverdue.length > 0) {
+    const count = s.paymentsOverdue.length;
+    return {
+      label: `${count} pagamento${count > 1 ? "s" : ""} atrasado${count > 1 ? "s" : ""}`,
+      sub: s.paymentsOverdue[0].vendorName,
+      href: "/app/orcamento",
+      severity: "critical",
+    };
+  }
+  if (s.tasksOverdue > 0) {
+    return {
+      label: `${s.tasksOverdue} tarefa${s.tasksOverdue > 1 ? "s" : ""} atrasada${s.tasksOverdue > 1 ? "s" : ""}`,
+      sub: "Ver no cronograma",
+      href: "/app/cronograma",
+      severity: "critical",
+    };
+  }
+  if (s.paymentsSoon.length > 0) {
+    const p = s.paymentsSoon[0];
+    return {
+      label: `Pagamento em ${p.daysLeft} dia${p.daysLeft > 1 ? "s" : ""}`,
+      sub: `${p.vendorName} · ${formatBRL(p.amount)}`,
+      href: "/app/orcamento",
+      severity: "warning",
+    };
+  }
+  if (s.vendorsPendingContract > 0) {
+    return {
+      label: `${s.vendorsPendingContract} contrato${s.vendorsPendingContract > 1 ? "s" : ""} não assinado${s.vendorsPendingContract > 1 ? "s" : ""}`,
+      sub: "Fornecedor fechado sem contrato",
+      href: "/app/fornecedores",
+      severity: "warning",
+    };
+  }
+  return null;
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
+const CLOSED_STATUSES = ["Fechado", "Contrato pendente", "Contrato assinado", "Pagamento pendente", "Pago", "Finalizado"];
+
 export default function DashboardPage() {
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
-  const [guestCount, setGuestCount] = useState(0);
-  const [vendorCount, setVendorCount] = useState(0);
-  const [tasksDone, setTasksDone] = useState(0);
+  const [stats, setStats] = useState<DashStats>({
+    guestsTotal: 0, guestsConfirmed: 0,
+    vendorsTotal: 0, vendorsClosed: 0, vendorsPendingContract: 0,
+    tasksPending: 0, tasksOverdue: 0, nextTask: null,
+    budgetTotal: 0, budgetCommitted: 0, proposalsCount: 0,
+    paymentsOverdue: [], paymentsSoon: [],
+  });
   const [editingDate, setEditingDate] = useState(false);
   const [dateInput, setDateInput] = useState("");
   const [firstSteps, setFirstSteps] = useState({ budgetSet: false, guestsSet: false, quotesSet: false, dismissed: false });
+  const [alertDismissed, setAlertDismissed] = useState(false);
   const dailyTip = useMemo(() => getDailyTip(), []);
 
   useEffect(() => {
     const ob = getOnboardingData();
     setOnboarding(ob);
+
+    // Guests
     const guests = getStoredGuests();
-    setGuestCount(guests.length);
-    setVendorCount(getStoredVendors().length);
+    const guestsConfirmed = guests.filter((g) => g.rsvp.status === "confirmed").length;
+
+    // Vendors
+    const vendors = getStoredVendors();
+    const vendorsClosed = vendors.filter((v) => CLOSED_STATUSES.includes(v.status)).length;
+    const vendorsPendingContract = vendors.filter(
+      (v) => CLOSED_STATUSES.includes(v.status) && !v.contract.signed
+    ).length;
+
+    // Payments
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayIso = today.toISOString().slice(0, 10);
+    const in7daysIso = new Date(today.getTime() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const paymentsOverdue: DashStats["paymentsOverdue"] = [];
+    const paymentsSoon: DashStats["paymentsSoon"] = [];
+    vendors.forEach((v) => {
+      v.payments.forEach((p) => {
+        if (p.status === "pago" || !p.dueDate) return;
+        if (p.dueDate < todayIso) {
+          paymentsOverdue.push({ vendorName: v.name, amount: p.amount });
+        } else if (p.dueDate <= in7daysIso) {
+          const daysLeft = Math.ceil(
+            (new Date(`${p.dueDate}T12:00:00`).getTime() - today.getTime()) / 86_400_000
+          );
+          paymentsSoon.push({ vendorName: v.name, amount: p.amount, daysLeft });
+        }
+      });
+    });
+    paymentsSoon.sort((a, b) => a.daysLeft - b.daysLeft);
+
+    // Budget
+    const budgetTotal = parseBudgetRange(ob?.plannedBudget ?? "");
+    const budgetCommitted = vendors.reduce((sum, v) => sum + v.totalValue, 0);
+
+    // Tasks
     const planTasks = getStoredPlanTasks();
-    setTasksDone(planTasks.filter((t) => t.status === "Concluída").length);
+    const pending = planTasks.filter((t) => t.status === "Pendente" || t.status === "Atrasada");
+    const overdue = planTasks.filter((t) => t.status === "Atrasada");
+    pending.sort((a, b) => {
+      if (a.status === "Atrasada" && b.status !== "Atrasada") return -1;
+      if (b.status === "Atrasada" && a.status !== "Atrasada") return 1;
+      return a.dueDateIso.localeCompare(b.dueDateIso);
+    });
+    const nextTask = pending[0] ? { title: pending[0].title, dueDate: pending[0].dueDate } : null;
+
+    // Proposals
+    const proposals = getStoredProposals();
+
+    // First steps
     const uid = getUserId();
     const dismissKey = uid ? `casarei:${uid}:first-steps-dismissed` : "casarei:first-steps-dismissed";
     const dismissed = typeof window !== "undefined" && window.localStorage.getItem(dismissKey) === "1";
     const allocation = getBudgetAllocation();
+
+    setStats({
+      guestsTotal: guests.length,
+      guestsConfirmed,
+      vendorsTotal: vendors.length,
+      vendorsClosed,
+      vendorsPendingContract,
+      tasksPending: pending.length,
+      tasksOverdue: overdue.length,
+      nextTask,
+      budgetTotal,
+      budgetCommitted,
+      proposalsCount: proposals.length,
+      paymentsOverdue,
+      paymentsSoon,
+    });
+
     setFirstSteps({
       budgetSet: Object.keys(allocation).length > 0,
       guestsSet: guests.length > 0,
-      quotesSet: getStoredProposals().length > 0 || getStoredVendors().length > 0,
+      quotesSet: proposals.length > 0 || vendors.length > 0,
       dismissed,
     });
   }, []);
@@ -120,11 +261,6 @@ export default function DashboardPage() {
   }
 
   const session = typeof window !== "undefined" ? getSession() : null;
-  const firstName =
-    onboarding?.brideName ||
-    String(session?.user?.user_metadata?.full_name ?? "").split(" ")[0] ||
-    "você";
-
   const daysLeft = getDaysLeft(onboarding?.weddingDate);
   const weddingDate = onboarding?.weddingDate ? formatDate(onboarding.weddingDate) : null;
   const city = onboarding?.city || null;
@@ -132,6 +268,7 @@ export default function DashboardPage() {
   const brideName = onboarding?.brideName || null;
   const partnerName = onboarding?.partnerName || null;
   const coupleNames = [brideName, partnerName].filter(Boolean).join(" & ") || null;
+
   function saveDate() {
     if (!dateInput) return;
     const base: OnboardingData = onboarding ?? {
@@ -147,6 +284,91 @@ export default function DashboardPage() {
     setEditingDate(false);
   }
 
+  const alert = useMemo(() => computeAlert(stats), [stats]);
+  const budgetPct = stats.budgetTotal > 0 ? Math.min(100, Math.round((stats.budgetCommitted / stats.budgetTotal) * 100)) : 0;
+
+  // Cards with live data
+  const cards = [
+    {
+      title: "Orçamentos",
+      href: "/app/cotacoes",
+      icon: Scale,
+      bg: "#2A1A1F",
+      iconColor: "#F3A8C2",
+      dark: true,
+      stat: stats.proposalsCount > 0 ? String(stats.proposalsCount) : "—",
+      statLabel: stats.proposalsCount > 0
+        ? `proposta${stats.proposalsCount > 1 ? "s" : ""} para analisar`
+        : "Adicione suas cotações",
+      alert: false,
+      bar: null,
+    },
+    {
+      title: "Fornecedores",
+      href: "/app/fornecedores",
+      icon: Store,
+      bg: "#EEF3EA",
+      iconColor: "#5F7752",
+      dark: false,
+      stat: String(stats.vendorsClosed),
+      statLabel: `fechado${stats.vendorsClosed !== 1 ? "s" : ""} de ${stats.vendorsTotal}`,
+      alert: stats.vendorsPendingContract > 0,
+      bar: stats.vendorsTotal > 0 ? Math.round((stats.vendorsClosed / stats.vendorsTotal) * 100) : null,
+    },
+    {
+      title: "Convidados",
+      href: "/app/convidados",
+      icon: Users,
+      bg: "#EEF1F4",
+      iconColor: "#6E7F91",
+      dark: false,
+      stat: stats.guestsTotal > 0 ? String(stats.guestsConfirmed) : "—",
+      statLabel: stats.guestsTotal > 0
+        ? `confirmado${stats.guestsConfirmed !== 1 ? "s" : ""} de ${stats.guestsTotal}`
+        : "Adicione convidados",
+      alert: false,
+      bar: stats.guestsTotal > 0 ? Math.round((stats.guestsConfirmed / stats.guestsTotal) * 100) : null,
+    },
+    {
+      title: "Financeiro",
+      href: "/app/orcamento",
+      icon: Wallet,
+      bg: "#F8E7EC",
+      iconColor: "#D96C8A",
+      dark: false,
+      stat: stats.budgetCommitted > 0 ? formatBRL(stats.budgetCommitted) : "—",
+      statLabel: stats.budgetTotal > 0 ? `de ${formatBRL(stats.budgetTotal)}` : "orçamento não definido",
+      alert: stats.paymentsOverdue.length > 0,
+      bar: budgetPct > 0 ? budgetPct : null,
+    },
+    {
+      title: "Agenda",
+      href: "/app/cronograma",
+      icon: CheckSquare,
+      bg: "#FBEEE8",
+      iconColor: "#B96F52",
+      dark: false,
+      stat: String(stats.tasksPending),
+      statLabel: stats.tasksOverdue > 0
+        ? `pendentes · ${stats.tasksOverdue} atrasada${stats.tasksOverdue > 1 ? "s" : ""}`
+        : `pendente${stats.tasksPending !== 1 ? "s" : ""}`,
+      alert: stats.tasksOverdue > 0,
+      bar: null,
+    },
+    {
+      title: "Presença & Mesas",
+      href: "/app/presenca-mesas",
+      icon: ClipboardList,
+      bg: "#EDEAF7",
+      iconColor: "#7B68C8",
+      dark: false,
+      stat: stats.guestsTotal > 0 ? String(stats.guestsTotal) : "—",
+      statLabel: "convidados na lista",
+      alert: false,
+      bar: null,
+    },
+  ];
+
   return (
     <div className="space-y-4">
 
@@ -155,7 +377,6 @@ export default function DashboardPage() {
         className="relative overflow-hidden rounded-[24px] p-6 text-white"
         style={{ background: "linear-gradient(145deg, #4B2E2B 0%, #2E1A18 100%)" }}
       >
-        {/* Glow decorativo */}
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full opacity-20"
           style={{ background: "radial-gradient(circle, #D96C8A, transparent)" }}
@@ -170,9 +391,7 @@ export default function DashboardPage() {
             <div className="mt-0.5 font-serif text-[80px] font-light leading-none tracking-tight">
               {daysLeft}
             </div>
-            <p className="text-sm font-medium text-white/65">
-              {daysLeft === 1 ? "dia" : "dias"}
-            </p>
+            <p className="text-sm font-medium text-white/65">{daysLeft === 1 ? "dia" : "dias"}</p>
           </div>
         ) : (
           <div className="text-center">
@@ -219,7 +438,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Sofia card dentro do hero */}
+        {/* Dica do dia */}
         <div className="mt-5 rounded-[18px] bg-white/10 p-4 backdrop-blur-sm">
           <div className="flex items-start gap-3">
             <div
@@ -229,20 +448,73 @@ export default function DashboardPage() {
               <Sparkles className="h-4 w-4 text-white" strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-white/50 uppercase tracking-wide">Dica do dia</p>
-              <p className="mt-0.5 text-sm leading-[1.55] text-white/85">
-                {dailyTip}
-              </p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-white/50">Dica do dia</p>
+              <p className="mt-0.5 text-sm leading-[1.55] text-white/85">{dailyTip}</p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Alert inteligente ── */}
+      {alert && !alertDismissed && (
+        <Link
+          href={alert.href}
+          className="flex items-center gap-3 rounded-[18px] px-4 py-3.5"
+          style={{
+            background: alert.severity === "critical" ? "#FFF1F1" : "#FFF8EC",
+            outline: `1px solid ${alert.severity === "critical" ? "#FBCACA" : "#F7E0B0"}`,
+          }}
+        >
+          <AlertCircle
+            className="h-5 w-5 shrink-0"
+            style={{ color: alert.severity === "critical" ? "#D94A4A" : "#C97B1A" }}
+            strokeWidth={2}
+          />
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-sm font-bold leading-none"
+              style={{ color: alert.severity === "critical" ? "#B83A3A" : "#A86010" }}
+            >
+              {alert.label}
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: alert.severity === "critical" ? "#C55050" : "#B87820" }}>
+              {alert.sub}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <ChevronRight className="h-4 w-4" style={{ color: alert.severity === "critical" ? "#D94A4A" : "#C97B1A" }} />
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setAlertDismissed(true); }}
+              className="ml-1 grid h-6 w-6 place-items-center rounded-full bg-black/5"
+              aria-label="Fechar alerta"
+            >
+              <X className="h-3.5 w-3.5" style={{ color: alert.severity === "critical" ? "#B83A3A" : "#A86010" }} />
+            </button>
+          </div>
+        </Link>
+      )}
+
       {/* ── Stats rápidas ── */}
       <div className="grid grid-cols-3 gap-2">
-        <StatPill value={String(guestCount)} label="convidados" />
-        <StatPill value={String(tasksDone)} label="tarefas feitas" />
-        <StatPill value={String(vendorCount)} label="fornecedores" />
+        <StatCard
+          value={stats.guestsTotal > 0 ? String(stats.guestsConfirmed) : "—"}
+          label="confirmados"
+          sub={stats.guestsTotal > 0 ? `de ${stats.guestsTotal}` : "convidados"}
+          valueColor="#5F7752"
+        />
+        <StatCard
+          value={String(stats.tasksPending)}
+          label="pendentes"
+          sub={stats.tasksOverdue > 0 ? `${stats.tasksOverdue} atrasada${stats.tasksOverdue > 1 ? "s" : ""}` : "tarefas"}
+          valueColor={stats.tasksOverdue > 0 ? "#D94A4A" : stats.tasksPending > 0 ? "#C97B1A" : "#5F7752"}
+        />
+        <StatCard
+          value={String(stats.vendorsClosed)}
+          label="fechados"
+          sub={`de ${stats.vendorsTotal}`}
+          valueColor="#7B68C8"
+        />
       </div>
 
       {/* ── Primeiros passos ── */}
@@ -262,27 +534,9 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 space-y-2">
             {[
-              {
-                done: firstSteps.budgetSet,
-                href: "/app/orcamento",
-                icon: "💰",
-                title: "Distribuir o orçamento",
-                sub: "Defina quanto reservar para cada fornecedor",
-              },
-              {
-                done: firstSteps.guestsSet,
-                href: "/app/convidados",
-                icon: "👥",
-                title: "Montar a lista de convidados",
-                sub: "A quantidade de pessoas define quase tudo",
-              },
-              {
-                done: firstSteps.quotesSet,
-                href: "/app/cotacoes",
-                icon: "📋",
-                title: "Solicitar as primeiras cotações",
-                sub: "Compare propostas com a IA e feche fornecedores",
-              },
+              { done: firstSteps.budgetSet, href: "/app/orcamento", icon: "💰", title: "Distribuir o orçamento", sub: "Defina quanto reservar para cada fornecedor" },
+              { done: firstSteps.guestsSet, href: "/app/convidados", icon: "👥", title: "Montar a lista de convidados", sub: "A quantidade de pessoas define quase tudo" },
+              { done: firstSteps.quotesSet, href: "/app/cotacoes", icon: "📋", title: "Solicitar as primeiras cotações", sub: "Compare propostas com a IA e feche fornecedores" },
             ].map((step) => (
               <Link
                 key={step.href}
@@ -292,7 +546,7 @@ export default function DashboardPage() {
                 <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-base ${step.done ? "bg-[#EAF3DE]" : "bg-[#F8E7EC]"}`}>
                   {step.done ? "✓" : step.icon}
                 </span>
-                <span className="flex-1 min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className={`block text-sm font-semibold ${step.done ? "text-[#9E8880] line-through" : "text-[#4B2E2B]"}`}>{step.title}</span>
                   {!step.done && <span className="mt-0.5 block text-xs text-[#8A716D]">{step.sub}</span>}
                 </span>
@@ -307,28 +561,59 @@ export default function DashboardPage() {
       <section>
         <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Módulos</h2>
         <div className="grid grid-cols-2 gap-3">
-          {MODULE_CARDS.map((mod) => {
-            const Icon = mod.icon;
-            const dark = mod.bg.startsWith("#2") || mod.bg.startsWith("#1") || mod.bg.startsWith("#3");
+          {cards.map((card) => {
+            const Icon = card.icon;
             return (
               <Link
-                key={mod.href}
-                href={mod.href}
-                className="flex flex-col rounded-[22px] p-4 transition active:scale-[0.97]"
+                key={card.href}
+                href={card.href}
+                className="relative flex flex-col rounded-[22px] p-4 transition active:scale-[0.97]"
                 style={{
-                  background: dark ? mod.bg : "#fff",
-                  boxShadow: dark ? "0 8px 28px rgba(42,26,31,0.30)" : "0 4px 18px rgba(75,46,43,0.07)",
-                  outline: dark ? "none" : "1px solid #EEE6E1",
+                  background: card.dark ? card.bg : "#fff",
+                  boxShadow: card.dark
+                    ? "0 8px 28px rgba(42,26,31,0.30)"
+                    : "0 4px 18px rgba(75,46,43,0.07)",
+                  outline: card.dark ? "none" : "1px solid #EEE6E1",
                 }}
               >
+                {/* Alert dot */}
+                {card.alert && (
+                  <span className="absolute right-3.5 top-3.5 h-2.5 w-2.5 rounded-full bg-[#D94A4A] ring-2 ring-white" />
+                )}
+
+                {/* Icon */}
                 <span
                   className="grid h-11 w-11 place-items-center rounded-[14px]"
-                  style={{ background: dark ? "rgba(255,255,255,0.12)" : mod.bg }}
+                  style={{ background: card.dark ? "rgba(255,255,255,0.12)" : card.bg }}
                 >
-                  <Icon className="h-5 w-5" style={{ color: mod.iconColor }} strokeWidth={1.8} />
+                  <Icon className="h-5 w-5" style={{ color: card.iconColor }} strokeWidth={1.8} />
                 </span>
-                <p className={`mt-3 font-serif text-base leading-snug ${dark ? "text-white" : "text-[#4B2E2B]"}`}>{mod.title}</p>
-                <p className={`mt-0.5 text-[11px] leading-snug ${dark ? "text-white/60" : "text-[#8A716D]"}`}>{mod.sub}</p>
+
+                {/* Title */}
+                <p className={`mt-3 font-serif text-base leading-snug ${card.dark ? "text-white" : "text-[#4B2E2B]"}`}>
+                  {card.title}
+                </p>
+
+                {/* Live stat */}
+                <p className={`mt-1.5 font-serif text-2xl font-semibold leading-none ${card.dark ? "text-white" : "text-[#4B2E2B]"}`}>
+                  {card.stat}
+                </p>
+                <p className={`mt-1 text-[11px] leading-snug ${card.dark ? "text-white/55" : "text-[#8A716D]"}`}>
+                  {card.statLabel}
+                </p>
+
+                {/* Progress bar */}
+                {card.bar !== null && (
+                  <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-black/8">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${card.bar}%`,
+                        background: card.dark ? "rgba(243,168,194,0.8)" : card.iconColor,
+                      }}
+                    />
+                  </div>
+                )}
               </Link>
             );
           })}
@@ -339,14 +624,17 @@ export default function DashboardPage() {
   );
 }
 
-function StatPill({ value, label }: { value: string; label: string }) {
+// ── sub-components ─────────────────────────────────────────────────────────────
+
+function StatCard({ value, label, sub, valueColor }: { value: string; label: string; sub: string; valueColor: string }) {
   return (
     <article
-      className="rounded-[16px] bg-white px-3 py-3 text-center ring-1 ring-[#EEE6E1]"
+      className="rounded-[18px] bg-white px-3 py-3.5 text-center ring-1 ring-[#EEE6E1]"
       style={{ boxShadow: "0 2px 10px rgba(75,46,43,0.05)" }}
     >
-      <strong className="block font-serif text-[22px] leading-none text-[#4B2E2B]">{value}</strong>
-      <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.06em] text-[#8A716D]">{label}</span>
+      <strong className="block font-serif text-[26px] leading-none" style={{ color: valueColor }}>{value}</strong>
+      <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.06em] text-[#4B2E2B]">{label}</span>
+      <span className="mt-0.5 block text-[10px] text-[#A8918C]">{sub}</span>
     </article>
   );
 }
