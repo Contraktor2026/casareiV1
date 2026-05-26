@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Home, Sparkles, Users, Wallet } from "lucide-react";
+import { Home, Sparkles, Store, Users, Wallet } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const LEFT_TABS = [
   { href: "/app", label: "Início", icon: Home, match: ["/app"] },
   {
-    href: "/app/cronograma",
-    label: "Agenda",
-    icon: CalendarDays,
-    match: ["/app/cronograma", "/app/tarefas", "/app/timeline", "/app/inspiracoes"],
+    href: "/app/fornecedores",
+    label: "Fornecedores",
+    icon: Store,
+    match: ["/app/fornecedores"],
   },
 ];
 
@@ -27,7 +27,7 @@ const RIGHT_TABS = [
     href: "/app/orcamento",
     label: "Financeiro",
     icon: Wallet,
-    match: ["/app/orcamento", "/app/fornecedores", "/app/cotacoes"],
+    match: ["/app/orcamento", "/app/cotacoes"],
   },
 ];
 

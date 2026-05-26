@@ -14,11 +14,12 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { getOnboardingData, getSession, getUserId, saveOnboardingData } from "@/lib/client/supabase-auth";
 import { getStoredGuests } from "@/lib/client/guests-store";
-import { getBudgetAllocation, getStoredPlanTasks, type PlanTask } from "@/lib/client/planning-store";
+import { getBudgetAllocation, getStoredPlanTasks } from "@/lib/client/planning-store";
 import { getStoredProposals } from "@/lib/client/quotes-store";
 import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
@@ -59,11 +60,13 @@ function getDailyTip(): string {
   return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
 }
 
-const QUICK_ACTIONS = [
-  { label: "Convidados", href: "/app/convidados", icon: Users, color: "#EEF1F4", iconColor: "#6E7F91" },
-  { label: "Fornecedores", href: "/app/fornecedores", icon: Store, color: "#EEF3EA", iconColor: "#5F7752" },
-  { label: "Financeiro", href: "/app/orcamento", icon: Wallet, color: "#F8E7EC", iconColor: "#D96C8A" },
-  { label: "Agenda", href: "/app/cronograma", icon: CheckSquare, color: "#FBEEE8", iconColor: "#B96F52" },
+const MODULE_CARDS: { title: string; sub: string; href: string; icon: ElementType; bg: string; iconColor: string }[] = [
+  { title: "Convidados", sub: "Lista, grupos e confirmações", href: "/app/convidados", icon: Users, bg: "#EEF1F4", iconColor: "#6E7F91" },
+  { title: "Presença & Mesas", sub: "Check-in e acomodações", href: "/app/presenca-mesas", icon: ClipboardList, bg: "#EDEAF7", iconColor: "#7B68C8" },
+  { title: "Fornecedores", sub: "Contratos e pagamentos", href: "/app/fornecedores", icon: Store, bg: "#EEF3EA", iconColor: "#5F7752" },
+  { title: "Financeiro", sub: "Orçamento e categorias", href: "/app/orcamento", icon: Wallet, bg: "#F8E7EC", iconColor: "#D96C8A" },
+  { title: "Agenda", sub: "Cronograma e tarefas", href: "/app/cronograma", icon: CheckSquare, bg: "#FBEEE8", iconColor: "#B96F52" },
+  { title: "Cotações", sub: "Compare propostas com IA", href: "/app/cotacoes", icon: Scale, bg: "#F5EDE8", iconColor: "#9A5C3B" },
 ];
 
 function getDaysLeft(dateStr: string | undefined): number | null {
@@ -85,7 +88,6 @@ export default function DashboardPage() {
   const [guestCount, setGuestCount] = useState(0);
   const [vendorCount, setVendorCount] = useState(0);
   const [tasksDone, setTasksDone] = useState(0);
-  const [nextTask, setNextTask] = useState<PlanTask | null>(null);
   const [editingDate, setEditingDate] = useState(false);
   const [dateInput, setDateInput] = useState("");
   const [firstSteps, setFirstSteps] = useState({ budgetSet: false, guestsSet: false, quotesSet: false, dismissed: false });
@@ -99,13 +101,6 @@ export default function DashboardPage() {
     setVendorCount(getStoredVendors().length);
     const planTasks = getStoredPlanTasks();
     setTasksDone(planTasks.filter((t) => t.status === "Concluída").length);
-    const pending = planTasks.filter((t) => t.status === "Pendente" || t.status === "Atrasada");
-    pending.sort((a, b) => {
-      if (a.status === "Atrasada" && b.status !== "Atrasada") return -1;
-      if (b.status === "Atrasada" && a.status !== "Atrasada") return 1;
-      return a.dueDateIso.localeCompare(b.dueDateIso);
-    });
-    setNextTask(pending[0] ?? null);
     const uid = getUserId();
     const dismissKey = uid ? `casarei:${uid}:first-steps-dismissed` : "casarei:first-steps-dismissed";
     const dismissed = typeof window !== "undefined" && window.localStorage.getItem(dismissKey) === "1";
@@ -309,27 +304,6 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* ── Próxima tarefa do planejamento ── */}
-      {nextTask && (
-        <Link
-          href="/app/cronograma"
-          className="flex items-start gap-3 rounded-[20px] bg-white px-4 py-4 ring-1 ring-[#EEE6E1] active:scale-[0.98] transition"
-          style={{ boxShadow: "0 4px 18px rgba(75,46,43,0.06)" }}
-        >
-          <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-[10px] font-bold ${nextTask.status === "Atrasada" ? "bg-[#F8E7EC] text-[#D96C8A]" : "bg-[#F0EAE4] text-[#8A716D]"}`}>
-            {nextTask.status === "Atrasada" ? "!" : "→"}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${nextTask.status === "Atrasada" ? "text-[#D96C8A]" : "text-[#8A716D]"}`}>
-              {nextTask.status === "Atrasada" ? "Atrasada" : "Próxima tarefa"} · {nextTask.category}
-            </p>
-            <p className="mt-0.5 text-sm font-semibold text-[#4B2E2B]">{nextTask.title}</p>
-            <p className="mt-0.5 text-xs text-[#8A716D]">{nextTask.dueDate}</p>
-          </div>
-          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#C4B0AA]" />
-        </Link>
-      )}
-
       {/* ── Destaque: Cotações com IA ── */}
       <Link
         href="/app/cotacoes"
@@ -350,59 +324,30 @@ export default function DashboardPage() {
         <ArrowRight className="h-5 w-5 shrink-0 text-white/60" />
       </Link>
 
-      {/* ── Acesso rápido ── */}
-      <section>
-        <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Acesso rápido</h2>
-        <div className="grid grid-cols-4 gap-2">
-          {QUICK_ACTIONS.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className="flex flex-col items-center gap-2 rounded-[18px] bg-white p-3 ring-1 ring-[#EEE6E1] transition active:scale-[0.97]"
-              style={{ boxShadow: "0 4px 16px rgba(75,46,43,0.05)" }}
-            >
-              <span
-                className="grid h-10 w-10 place-items-center rounded-[14px]"
-                style={{ background: action.color }}
-              >
-                <action.icon className="h-5 w-5" style={{ color: action.iconColor }} strokeWidth={1.8} />
-              </span>
-              <span className="text-[10px] font-bold leading-tight text-[#4B2E2B] text-center">
-                {action.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* ── Módulos ── */}
       <section>
         <h2 className="mb-3 text-[13px] font-bold text-[#4B2E2B]">Módulos</h2>
-        <div className="space-y-2">
-          {[
-            { title: "Convidados", sub: "Lista, grupos, RSVP e confirmações", href: "/app/convidados", icon: Users },
-            { title: "Presença e Mesas", sub: "Check-in, mesas e acomodações", href: "/app/presenca-mesas", icon: ClipboardList },
-            { title: "Fornecedores", sub: "Contratos, pagamentos e cotações", href: "/app/fornecedores", icon: Store },
-            { title: "Financeiro", sub: "Orçamento, categorias e projeções", href: "/app/orcamento", icon: Wallet },
-            { title: "Agenda", sub: "Cronograma mensal e tarefas", href: "/app/cronograma", icon: CheckSquare },
-            { title: "Cotações", sub: "Compare propostas com IA e feche fornecedores", href: "/app/cotacoes", icon: Scale },
-          ].map((mod) => (
-            <Link
-              key={mod.href}
-              href={mod.href}
-              className="flex items-center gap-3 rounded-[18px] bg-white px-4 py-4 ring-1 ring-[#EEE6E1] transition active:scale-[0.99]"
-              style={{ boxShadow: "0 2px 12px rgba(75,46,43,0.04)" }}
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[#F8E7EC]">
-                <mod.icon className="h-5 w-5 text-[#D96C8A]" strokeWidth={1.7} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block text-sm text-[#4B2E2B]">{mod.title}</strong>
-                <span className="mt-0.5 block text-xs text-[#8A716D]">{mod.sub}</span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-[#C4B0AA]" />
-            </Link>
-          ))}
+        <div className="grid grid-cols-2 gap-3">
+          {MODULE_CARDS.map((mod) => {
+            const Icon = mod.icon;
+            return (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="flex flex-col rounded-[22px] bg-white p-4 ring-1 ring-[#EEE6E1] transition active:scale-[0.97]"
+                style={{ boxShadow: "0 4px 18px rgba(75,46,43,0.07)" }}
+              >
+                <span
+                  className="grid h-11 w-11 place-items-center rounded-[14px]"
+                  style={{ background: mod.bg }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: mod.iconColor }} strokeWidth={1.8} />
+                </span>
+                <p className="mt-3 font-serif text-base leading-snug text-[#4B2E2B]">{mod.title}</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-[#8A716D]">{mod.sub}</p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
