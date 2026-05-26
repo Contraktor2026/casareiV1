@@ -168,8 +168,8 @@ export default function QuotesPage() {
       price: numberFromCurrency(priceLabel),
       priceLabel,
       shortSummary: summary,
-      compatibility: 70,
-      compatibilityReasons: ["informações manuais", "pronto para comparar"],
+      compatibility: 0,
+      compatibilityReasons: [],
       sofiaNote: "Complete os detalhes para uma comparação mais precisa.",
       includes: ["Informações adicionadas manualmente"],
       notIncluded: [],
@@ -474,7 +474,7 @@ function DecisionHint({ title, proposal }: { title: string; proposal?: QuoteProp
       {proposal ? (
         <>
           <strong className="mt-2 block text-sm text-[#2A1A1F]">{proposal.vendor}</strong>
-          <p className="mt-1 text-xs text-[#8A716D]">{proposal.priceLabel} · {proposal.compatibility}%</p>
+          <p className="mt-1 text-xs text-[#8A716D]">{proposal.priceLabel}{proposal.compatibility > 0 ? ` · ${proposal.compatibility}%` : ""}</p>
         </>
       ) : <p className="mt-2 text-sm text-[#8A716D]">Sem dados ainda.</p>}
     </div>
@@ -501,10 +501,12 @@ function ProposalDecisionCard({ proposal, onFavorite, onCloseVendor }: { proposa
           <p className="text-xs text-[#8A716D]">Valor</p>
           <strong className="mt-1 block font-serif text-2xl text-[#4B1528]">{proposal.priceLabel}</strong>
         </div>
-        <div className="rounded-2xl bg-[#FBEAF0] p-4">
-          <p className="text-xs text-[#8A716D]">Compatibilidade</p>
-          <strong className="mt-1 block font-serif text-2xl text-[#D4537E]">{proposal.compatibility}%</strong>
-        </div>
+        {proposal.compatibility > 0 && (
+          <div className="rounded-2xl bg-[#FBEAF0] p-4">
+            <p className="text-xs text-[#8A716D]">Compatibilidade</p>
+            <strong className="mt-1 block font-serif text-2xl text-[#D4537E]">{proposal.compatibility}%</strong>
+          </div>
+        )}
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">

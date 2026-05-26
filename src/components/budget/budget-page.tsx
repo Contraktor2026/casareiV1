@@ -23,9 +23,11 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { getOnboardingData } from "@/lib/client/supabase-auth";
+import { getBudgetAllocation, getStoredVendorCategories, saveBudgetAllocation } from "@/lib/client/planning-store";
 import { getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
 import { getVendorFinancePayments, saveVendorFinancePayment, subscribeVendorFinancePayments } from "@/lib/client/vendor-finance-sync";
-import { budgetCategories, budgetOverview, budgetPayments } from "@/lib/mock/budget";
+import { budgetCategories, budgetPayments } from "@/lib/mock/budget";
 import type { BudgetCategory, BudgetPayment, BudgetPaymentStatus } from "@/types/budget";
 import type { Vendor, VendorCategory, VendorPayment } from "@/types/vendors";
 
@@ -70,28 +72,50 @@ function sortByDueDate(payments: BudgetPayment[]) {
   return [...payments].sort((a, b) => new Date(`${a.dueDate}T12:00:00`).getTime() - new Date(`${b.dueDate}T12:00:00`).getTime());
 }
 
+function parseBudgetRange(range: string): number {
+  const nums = (range.match(/\d+/g) ?? []).map(Number);
+  if (nums.length === 0) return 0;
+  const thousands = range.toLowerCase().includes("mil") ? 1000 : 1;
+  if (nums.length === 1) return nums[0] * thousands;
+  return Math.round((nums[0] + nums[1]) / 2) * thousands;
+}
+
 export function BudgetPage() {
   const [vendorPayments, setVendorPayments] = useState<BudgetPayment[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showAllocation, setShowAllocation] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory | null>(null);
   const [message, setMessage] = useState("");
+  const [allocationDraft, setAllocationDraft] = useState<{ [k: string]: string }>({});
+  const [vendorCategories, setVendorCategories] = useState<string[]>([]);
   const allPayments = useMemo(() => sortByDueDate([...vendorPayments, ...budgetPayments]), [vendorPayments]);
 
   useEffect(() => {
     setVendorPayments(getVendorFinancePayments());
     setVendors(getStoredVendors());
+    const cats = getStoredVendorCategories();
+    setVendorCategories(cats.length > 0 ? cats : ["Espaço", "Buffet", "Fotografia", "Decoração", "Música/DJ", "Cerimonial"]);
+    const saved = getBudgetAllocation();
+    const draft: { [k: string]: string } = {};
+    (cats.length > 0 ? cats : ["Espaço", "Buffet", "Fotografia", "Decoração", "Música/DJ", "Cerimonial"]).forEach((cat) => {
+      draft[cat] = saved[cat] ? String(saved[cat]) : "";
+    });
+    setAllocationDraft(draft);
     return subscribeVendorFinancePayments(() => {
       setVendorPayments(getVendorFinancePayments());
       setVendors(getStoredVendors());
     });
   }, []);
 
+  const plannedAmount = useMemo(() => parseBudgetRange(getOnboardingData()?.plannedBudget ?? ""), []);
   const paid = allPayments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
   const payable = allPayments.filter((payment) => payment.status !== "pago").reduce((sum, payment) => sum + payment.amount, 0);
+  const committed = paid + payable;
+  const available = Math.max(0, plannedAmount - committed);
   const overdue = allPayments.filter((payment) => payment.status === "atrasado" || daysBetween(payment.dueDate) < 0);
   const nextDue = sortByDueDate(allPayments.filter((payment) => payment.status !== "pago"))[0];
-  const usedPercent = Math.min(100, Math.round((budgetOverview.committed / budgetOverview.planned) * 100));
+  const usedPercent = plannedAmount > 0 ? Math.min(100, Math.round((committed / plannedAmount) * 100)) : 0;
 
   const categorySummaries = budgetCategories.map((category) => {
     const linkedPayments = allPayments.filter((payment) => payment.category.toLowerCase() === category.name.toLowerCase());
@@ -152,14 +176,16 @@ export function BudgetPage() {
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#993556]">Financeiro</p>
           <h1 className="mt-1 font-serif text-3xl leading-none text-[#4B1528]">Seu dinheiro sem confusão</h1>
           <p className="mt-3 text-sm leading-6 text-[#6F5B57]">
-            Você ainda pode gastar <strong className="text-[#3B6D11]">{money(budgetOverview.available)}</strong>.{" "}
+            {plannedAmount > 0
+              ? <>Você ainda pode gastar <strong className="text-[#3B6D11]">{money(available)}</strong>.{" "}</>
+              : "Cadastre seu orçamento no onboarding para ver o disponível. "}
             {nextDue ? <>O próximo pagamento vence {dueText(daysBetween(nextDue.dueDate)).toLowerCase()}.</> : "Nenhum vencimento em aberto."}
           </p>
 
           <div className="mt-4 rounded-[22px] bg-[#FFF8F4] p-4">
             <div className="flex flex-wrap items-baseline gap-2">
-              <strong className="font-serif text-4xl font-medium text-[#2A1A1F]">{money(budgetOverview.committed)}</strong>
-              <span className="text-sm text-[#8A716D]">usado de {money(budgetOverview.planned)}</span>
+              <strong className="font-serif text-4xl font-medium text-[#2A1A1F]">{money(committed)}</strong>
+              <span className="text-sm text-[#8A716D]">{plannedAmount > 0 ? `usado de ${money(plannedAmount)}` : "comprometido"}</span>
             </div>
             <div className="mt-3 h-3 overflow-hidden rounded-full bg-[#F4ECE8]">
               <div className="h-full rounded-full bg-[linear-gradient(90deg,#ED93B1,#D4537E)]" style={{ width: `${usedPercent}%` }} />
@@ -167,11 +193,53 @@ export function BudgetPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <MetricCard label="Disponível" value={money(budgetOverview.available)} tone="ok" icon={<Wallet />} />
+            <MetricCard label="Disponível" value={plannedAmount > 0 ? money(available) : "—"} tone="ok" icon={<Wallet />} />
             <MetricCard label="A pagar" value={money(payable)} tone="warn" icon={<Clock3 />} />
             <MetricCard label="Pago" value={money(paid)} tone="ok" icon={<CheckCircle2 />} />
             <MetricCard label="Atrasado" value={money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} tone="danger" icon={<AlertTriangle />} />
           </div>
+        </section>
+
+        {/* ── Distribuir orçamento ── */}
+        <section className="rounded-[28px] bg-white p-5 shadow-[0_16px_42px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
+          <button type="button" className="flex w-full items-center justify-between" onClick={() => setShowAllocation((v) => !v)}>
+            <div className="text-left">
+              <p className="font-serif text-xl text-[#4B1528]">Distribuir orçamento</p>
+              <p className="mt-0.5 text-xs text-[#8A716D]">Defina quanto reservar para cada fornecedor</p>
+            </div>
+            <ChevronRight className={`h-5 w-5 shrink-0 text-[#8A716D] transition-transform ${showAllocation ? "rotate-90" : ""}`} />
+          </button>
+          {showAllocation && (
+            <div className="mt-4 space-y-3">
+              {plannedAmount > 0 && (() => {
+                const allocTotal = Object.values(allocationDraft).reduce((s, v) => s + (Number(v) || 0), 0);
+                const remaining = plannedAmount - allocTotal;
+                return (
+                  <div className="flex items-baseline gap-2 rounded-2xl bg-[#FFF8F4] px-4 py-3">
+                    <strong className="font-serif text-2xl text-[#4B1528]">{money(Math.max(0, remaining))}</strong>
+                    <span className="text-xs text-[#8A716D]">restante de {money(plannedAmount)}</span>
+                  </div>
+                );
+              })()}
+              {vendorCategories.map((cat) => (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="flex-1 text-sm font-semibold text-[#4B1528]">{cat}</span>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={allocationDraft[cat] ?? ""}
+                    onChange={(e) => setAllocationDraft((prev) => ({ ...prev, [cat]: e.target.value }))}
+                    onBlur={() => {
+                      const out: { [k: string]: number } = {};
+                      Object.entries(allocationDraft).forEach(([k, v]) => { if (Number(v) > 0) out[k] = Number(v); });
+                      saveBudgetAllocation(out);
+                    }}
+                    className="w-36 rounded-2xl border border-[#EEE6E1] bg-[#FFF8F4] px-3 py-2 text-right text-sm font-semibold text-[#2A1A1F] outline-none focus:border-[#D4537E]"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── Adicionar gasto ── */}

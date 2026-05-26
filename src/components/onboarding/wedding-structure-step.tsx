@@ -1,4 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,15 @@ export function WeddingStructureStep({
   onNext,
   onBack
 }: WeddingStructureStepProps) {
+  const [customInput, setCustomInput] = useState("");
+
+  function addCustomVendor() {
+    const name = customInput.trim();
+    if (!name) return;
+    if (!vendorTypesSelected.includes(name)) onToggleVendor(name);
+    setCustomInput("");
+  }
+
   return (
     <OnboardingStepShell
       eyebrow="Estrutura do casamento"
@@ -46,7 +56,7 @@ export function WeddingStructureStep({
           <div>
             <p className="mb-3 text-sm font-bold text-casarei-primary-deep">Fornecedores que pretende contratar</p>
             <div className="grid gap-2 sm:grid-cols-2">
-              {vendorTypes.map((vendor) => {
+              {[...vendorTypes, ...vendorTypesSelected.filter((v) => !vendorTypes.includes(v))].map((vendor) => {
                 const active = vendorTypesSelected.includes(vendor);
                 return (
                   <button
@@ -63,6 +73,24 @@ export function WeddingStructureStep({
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                placeholder="Outro fornecedor (ex: Sonorização)"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomVendor(); } }}
+                className="flex-1 rounded-2xl border border-casarei-border-soft bg-white px-4 py-2.5 text-sm text-casarei-text outline-none focus:border-casarei-primary"
+              />
+              <button
+                type="button"
+                onClick={addCustomVendor}
+                disabled={!customInput.trim()}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-casarei-primary text-white disabled:opacity-40"
+              >
+                <Plus className="h-5 w-5" aria-hidden />
+              </button>
             </div>
           </div>
         </div>

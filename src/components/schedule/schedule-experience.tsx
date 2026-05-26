@@ -70,161 +70,36 @@ const agendaMonths = [
   { label: "Dezembro 2026", monthLabel: "Dezembro", year: 2026, month: 11 }
 ];
 
-const phases: TimelinePhaseData[] = [
-  {
-    id: "12-10",
-    period: "12 a 10 meses antes",
-    title: "Prioridades, orçamento e estilo",
-    description: "Definir a direção do casamento e organizar as primeiras decisões.",
-    done: 8,
-    total: 10,
-    status: "No caminho"
-  },
-  {
-    id: "9-7",
-    period: "9 a 7 meses antes",
-    title: "Fornecedores principais",
-    description: "Contratar os fornecedores que sustentam a experiência do dia.",
-    done: 6,
-    total: 8,
-    status: "No caminho"
-  },
-  {
-    id: "6-4",
-    period: "6 a 4 meses antes",
-    title: "Cerimônia, festa e detalhes",
-    description: "Conectar estética, convidados, cardápio e celebração.",
-    done: 4,
-    total: 7,
-    status: "Atenção"
-  },
-  {
-    id: "3-2",
-    period: "3 a 2 meses antes",
-    title: "Confirmações e ajustes finais",
-    description: "Revisar contratos, lista, provas e escolhas importantes.",
-    done: 2,
-    total: 6,
-    status: "Atenção"
-  },
-  {
-    id: "1",
-    period: "1 mês antes",
-    title: "Revisão geral",
-    description: "Conferir pagamentos, fornecedores e últimos detalhes.",
-    done: 1,
-    total: 5,
-    status: "Futuro"
-  },
-  {
-    id: "week",
-    period: "Semana do casamento",
-    title: "Confirmar tudo e respirar",
-    description: "Deixar o essencial alinhado para viver o dia com presença.",
-    done: 0,
-    total: 4,
-    status: "Futuro"
-  }
+const phaseTemplates = [
+  { id: "12-10", period: "12 a 10 meses antes", title: "Prioridades, orçamento e estilo", description: "Definir a direção do casamento e organizar as primeiras decisões.", minDays: 300, maxDays: 99999 },
+  { id: "9-7", period: "9 a 7 meses antes", title: "Fornecedores principais", description: "Contratar os fornecedores que sustentam a experiência do dia.", minDays: 210, maxDays: 299 },
+  { id: "6-4", period: "6 a 4 meses antes", title: "Cerimônia, festa e detalhes", description: "Conectar estética, convidados, cardápio e celebração.", minDays: 120, maxDays: 209 },
+  { id: "3-2", period: "3 a 2 meses antes", title: "Confirmações e ajustes finais", description: "Revisar contratos, lista, provas e escolhas importantes.", minDays: 60, maxDays: 119 },
+  { id: "1", period: "1 mês antes", title: "Revisão geral", description: "Conferir pagamentos, fornecedores e últimos detalhes.", minDays: 7, maxDays: 59 },
+  { id: "week", period: "Semana do casamento", title: "Confirmar tudo e respirar", description: "Deixar o essencial alinhado para viver o dia com presença.", minDays: 0, maxDays: 6 },
 ];
 
-const initialTasks: TimelineTask[] = [
-  {
-    id: "local-cerimonia",
-    title: "Definir local da cerimônia",
-    description: "Pesquisar, visitar e comparar locais disponíveis.",
-    category: "Cerimônia",
-    dueDate: "Até 10/06",
-    dueDateIso: "2026-06-10",
-    day: 10,
-    status: "Pendente",
-    priority: "Alta",
-    kind: "sofia"
-  },
-  {
-    id: "cotacao-buffet",
-    title: "Iniciar cotação do buffet",
-    description: "Solicitar propostas e comparar opções de cardápio.",
-    category: "Buffet",
-    dueDate: "Até 15/06",
-    dueDateIso: "2026-06-15",
-    day: 15,
-    status: "Pendente",
-    priority: "Alta",
-    kind: "sofia"
-  },
-  {
-    id: "convidados",
-    title: "Revisar convidados pendentes",
-    description: "Conferir quem ainda precisa responder.",
-    category: "Convidados",
-    dueDate: "Até 18/06",
-    dueDateIso: "2026-06-18",
-    day: 18,
-    status: "Pendente",
-    priority: "Alta",
-    kind: "sistema"
-  },
-  {
-    id: "vestido",
-    title: "Provar vestido de noiva",
-    description: "Confirmar ajustes com o ateliê.",
-    category: "Vestuário",
-    dueDate: "Até 20/06",
-    dueDateIso: "2026-06-20",
-    day: 20,
-    status: "Pendente",
-    priority: "Média",
-    kind: "manual"
-  },
-  {
-    id: "musicas",
-    title: "Escolher músicas da festa",
-    description: "Separar músicas importantes com o DJ.",
-    category: "Música",
-    dueDate: "Até 22/07",
-    dueDateIso: "2026-07-22",
-    day: 22,
-    status: "Atrasada",
-    priority: "Alta",
-    kind: "manual"
-  },
-  {
-    id: "decor",
-    title: "Enviar referências da decoração",
-    description: "Organizar imagens e briefing para o fornecedor.",
-    category: "Decoração",
-    dueDate: "Até 25/08",
-    dueDateIso: "2026-08-25",
-    day: 25,
-    status: "Atrasada",
-    priority: "Média",
-    kind: "sofia"
-  },
-  {
-    id: "save-date",
-    title: "Enviar save the date",
-    description: "Aprovar arte e enviar para convidados.",
-    category: "Convites",
-    dueDate: "Concluída em 10/05",
-    dueDateIso: "2026-05-10",
-    day: 10,
-    status: "Concluída",
-    priority: "Média",
-    kind: "manual"
-  },
-  {
-    id: "degustacao",
-    title: "Agendar degustação do buffet",
-    description: "Reservar horário com os fornecedores favoritos.",
-    category: "Buffet",
-    dueDate: "Até 30/09",
-    dueDateIso: "2026-09-30",
-    day: 30,
-    status: "Pendente",
-    priority: "Baixa",
-    kind: "manual"
+function computePhases(tasks: TimelineTask[], weddingDateIso: string | null): TimelinePhaseData[] {
+  if (!weddingDateIso) {
+    return phaseTemplates.map((p) => ({ id: p.id, period: p.period, title: p.title, description: p.description, done: 0, total: 0, status: "Futuro" as const }));
   }
-];
+  const wedding = new Date(`${weddingDateIso}T12:00:00`).getTime();
+  const today = Date.now();
+  return phaseTemplates.map((p) => {
+    const phaseMax = wedding - p.minDays * 86_400_000;
+    const phaseMin = p.maxDays >= 99999 ? 0 : wedding - p.maxDays * 86_400_000;
+    const phaseTasks = tasks.filter((t) => {
+      const d = new Date(`${t.dueDateIso}T12:00:00`).getTime();
+      return d >= phaseMin && d <= phaseMax;
+    });
+    const done = phaseTasks.filter((t) => t.status === "Concluída").length;
+    const total = phaseTasks.length;
+    const status: TimelinePhaseData["status"] =
+      phaseMax > today ? "Futuro" : phaseTasks.some((t) => t.status === "Atrasada") ? "Atenção" : "No caminho";
+    return { id: p.id, period: p.period, title: p.title, description: p.description, done, total, status };
+  });
+}
+
 
 const dayNotesKey = "casarei:schedule-day-notes";
 
@@ -238,6 +113,7 @@ function TimelinePage() {
   const [brideName, setBrideName] = useState<string | null>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [weddingDateLabel, setWeddingDateLabel] = useState<string | null>(null);
+  const [weddingDateIso, setWeddingDateIso] = useState<string | null>(null);
 
   useEffect(() => {
     const ob = getOnboardingData();
@@ -247,9 +123,9 @@ function TimelinePage() {
       const diff = Math.ceil((wedding.getTime() - Date.now()) / 86_400_000);
       setDaysLeft(Math.max(0, diff));
       setWeddingDateLabel(new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" }).format(wedding));
+      setWeddingDateIso(ob.weddingDate);
     }
-    const planTasks = getStoredPlanTasks();
-    setTasks(planTasks.length > 0 ? (planTasks as TimelineTask[]) : initialTasks);
+    setTasks(getStoredPlanTasks() as TimelineTask[]);
   }, []);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("Pendentes");
   const [query, setQuery] = useState("");
@@ -315,7 +191,7 @@ function TimelinePage() {
     <div className="space-y-4 pb-4">
       <TimelineTabs
         active={activeTab}
-        counts={{ pending: pendingTasks.length, delayed: delayedTasks.length, phases: phases.length }}
+        counts={{ pending: pendingTasks.length, delayed: delayedTasks.length, phases: phaseTemplates.length }}
         onChange={setActiveTab}
       />
 
@@ -337,6 +213,7 @@ function TimelinePage() {
             progressPct={doneTasks.length + pendingTasks.length + delayedTasks.length > 0
               ? Math.round((doneTasks.length / (doneTasks.length + pendingTasks.length + delayedTasks.length)) * 100)
               : 0}
+            tasks={tasks}
             onTasks={() => setActiveTab("Tarefas")}
             onTimeline={() => setActiveTab("Linha do tempo")}
             onCalendar={openCalendar}
@@ -354,7 +231,7 @@ function TimelinePage() {
                 </div>
               </div>
 
-              <WeddingTimeline />
+              <WeddingTimeline tasks={tasks} weddingDateIso={weddingDateIso} />
             </section>
           ) : null}
 
@@ -485,6 +362,7 @@ function TimelineOverview({
   daysLeft,
   weddingDateLabel,
   progressPct,
+  tasks,
   onTasks,
   onTimeline,
   onCalendar,
@@ -497,6 +375,7 @@ function TimelineOverview({
   daysLeft: number | null;
   weddingDateLabel: string | null;
   progressPct: number;
+  tasks: TimelineTask[];
   onTasks: () => void;
   onTimeline: () => void;
   onCalendar: () => void;
@@ -520,7 +399,7 @@ function TimelineOverview({
 
         <div className="mt-5 grid gap-3">
           <CounterCard daysLeft={daysLeft} weddingDateLabel={weddingDateLabel} progressPct={progressPct} />
-          <MonthlyFocus onTasks={onTasks} />
+          <MonthlyFocus onTasks={onTasks} tasks={tasks} />
         </div>
       </div>
 
@@ -533,7 +412,10 @@ function TimelineOverview({
             <button type="button" onClick={onTimeline} className="text-xs font-bold text-[#D96C8A]">Ver linha do tempo</button>
           </div>
           <div className="mt-4 overflow-hidden rounded-2xl ring-1 ring-[#EEE6E1]">
-            {initialTasks.slice(0, 3).map((task) => <SimpleTaskLine key={task.id} task={task} />)}
+            {tasks.filter((t) => t.status !== "Concluída").slice(0, 3).map((task) => <SimpleTaskLine key={task.id} task={task} />)}
+            {tasks.filter((t) => t.status !== "Concluída").length === 0 && (
+              <p className="p-4 text-sm text-[#8A716D]">Nenhuma tarefa pendente. Complete o onboarding para gerar seu planejamento.</p>
+            )}
           </div>
         </section>
 
@@ -572,8 +454,8 @@ function CounterCard({ daysLeft, weddingDateLabel, progressPct }: { daysLeft: nu
   );
 }
 
-function MonthlyFocus({ compact = false, onTasks }: { compact?: boolean; onTasks: () => void }) {
-  const priorities = ["Definir local da cerimônia", "Iniciar cotação do buffet", "Revisar convidados"];
+function MonthlyFocus({ compact = false, onTasks, tasks = [] }: { compact?: boolean; onTasks: () => void; tasks?: TimelineTask[] }) {
+  const priorities = tasks.filter((t) => t.status !== "Concluída").slice(0, 3).map((t) => t.title);
 
   return (
     <article className={compact ? "rounded-[24px] bg-[#FFFDFC] p-5 shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]" : "rounded-[24px] bg-[#F8E7EC] p-5"}>
@@ -587,12 +469,14 @@ function MonthlyFocus({ compact = false, onTasks }: { compact?: boolean; onTasks
         </div>
       </div>
       <div className="mt-4 space-y-2">
-        {priorities.map((priority) => (
-          <p key={priority} className="flex items-center gap-2 text-sm font-semibold text-[#4B2E2B]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#D96C8A]" />
-            {priority}
-          </p>
-        ))}
+        {priorities.length > 0
+          ? priorities.map((priority) => (
+              <p key={priority} className="flex items-center gap-2 text-sm font-semibold text-[#4B2E2B]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#D96C8A]" />
+                {priority}
+              </p>
+            ))
+          : <p className="text-sm text-[#8A716D]">Complete o onboarding para gerar seu planejamento.</p>}
       </div>
       <Button type="button" onClick={onTasks} className="mt-4 h-11 w-full bg-[#D96C8A] hover:bg-[#C85D7B]">Ver tarefas do mês</Button>
     </article>
@@ -627,7 +511,8 @@ function SummaryItem({ label, value, tone }: { label: string; value: number; ton
   );
 }
 
-function WeddingTimeline() {
+function WeddingTimeline({ tasks, weddingDateIso }: { tasks: TimelineTask[]; weddingDateIso: string | null }) {
+  const phases = computePhases(tasks, weddingDateIso);
   return (
     <section className="rounded-[28px] bg-[#FFFDFC] p-5 shadow-[0_18px_55px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1] lg:p-8">
       <div className="relative space-y-3 pl-7 lg:pl-10">

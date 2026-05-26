@@ -87,6 +87,28 @@ export function upsertPlanTask(task: PlanTask): void {
   window.localStorage.setItem(planKey(), JSON.stringify(updated));
 }
 
+// ─── Budget allocation ────────────────────────────────────────────────────────
+
+function budgetKey(): string {
+  const uid = getUserId();
+  return uid ? `casarei:${uid}:budget-allocation` : "casarei:budget-allocation";
+}
+
+export type BudgetAllocation = { [category: string]: number };
+
+export function getBudgetAllocation(): BudgetAllocation {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(budgetKey());
+    return raw ? (JSON.parse(raw) as BudgetAllocation) : {};
+  } catch { return {}; }
+}
+
+export function saveBudgetAllocation(allocation: BudgetAllocation): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(budgetKey(), JSON.stringify(allocation));
+}
+
 export function generateAndStorePlan(data: OnboardingData): void {
   if (typeof window === "undefined") return;
   const existing = getStoredPlan();
