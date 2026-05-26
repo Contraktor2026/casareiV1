@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Calendar,
   Camera,
   CakeSlice,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -32,7 +34,7 @@ import type { Vendor, VendorStatus } from "@/types/vendors";
 import { SofiaQuotePanel } from "./sofia-quote-panel";
 import { VendorFormModal } from "./vendor-form-modal";
 
-const tabs = ["Já fechados", "Ainda cotando", "Faltam contratar", "Todos"] as const;
+const tabs = ["Fechados", "Cotando", "Pendentes", "Todos"] as const;
 type VendorsTab = (typeof tabs)[number];
 
 const initialPendingCategories = ["Musica", "Celebrante", "Beleza", "Cerimonial", "Transporte", "Doces"];
@@ -60,7 +62,7 @@ export function VendorsPage() {
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [proposals, setProposals] = useState<QuoteProposal[]>([]);
-  const [activeTab, setActiveTab] = useState<VendorsTab>("Já fechados");
+  const [activeTab, setActiveTab] = useState<VendorsTab>("Fechados");
   const [pendingCategories, setPendingCategories] = useState<string[]>([]);
   const [pendingDetail, setPendingDetail] = useState<string | null>(null);
   const [newPendingCategory, setNewPendingCategory] = useState("");
@@ -201,7 +203,7 @@ export function VendorsPage() {
     };
     addVendor(vendor);
     setSofiaCategory(null);
-    setActiveTab("Já fechados");
+    setActiveTab("Fechados");
   }
 
   if (pendingDetail) {
@@ -232,16 +234,16 @@ export function VendorsPage() {
     <div className="space-y-4 pb-4">
       <TabBar active={activeTab} onChange={setActiveTab} />
       {message ? <p className="rounded-2xl bg-[#EEF3EA] px-4 py-3 text-xs font-semibold text-[#4B2E2B]">{message}</p> : null}
-      {activeTab === "Já fechados" ? (
+      {activeTab === "Fechados" ? (
         <ClosedTab
           vendors={closedVendors}
           attentionVendors={attentionVendors}
           pendingCount={pendingCategories.length}
           onInvite={() => openVendorForm("Fechado")}
-          onGoPending={() => setActiveTab("Faltam contratar")}
+          onGoPending={() => setActiveTab("Pendentes")}
         />
       ) : null}
-      {activeTab === "Ainda cotando" ? (
+      {activeTab === "Cotando" ? (
         <QuotesTab
           categories={quoteCategories}
           proposals={proposals}
@@ -253,7 +255,7 @@ export function VendorsPage() {
           onPending={setPendingDetail}
         />
       ) : null}
-      {activeTab === "Faltam contratar" ? (
+      {activeTab === "Pendentes" ? (
         <PendingTab
           categories={pendingCategories}
           onOpen={setPendingDetail}
@@ -283,7 +285,7 @@ export function VendorsPage() {
           proposals={sofiaProposals.length ? sofiaProposals : proposals.filter((proposal) => proposal.category === "Fotografia")}
           onClose={() => setSofiaCategory(null)}
           onFavorite={toggleFavorite}
-          onShowDetails={() => setActiveTab("Ainda cotando")}
+          onShowDetails={() => setActiveTab("Cotando")}
           onCloseVendor={closeVendorFromProposal}
         />
         <VendorFormModal
@@ -753,9 +755,20 @@ function ClosedTab({
 }) {
   return (
     <section>
-      <h2 className="text-base font-bold text-[#4B2E2B]">Fornecedores fechados</h2>
-      <p className="text-xs text-[#8A716D]">{vendors.length + 1} contratados</p>
-      <div className="mt-3 space-y-3">
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+        <div className="max-w-[200px]">
+          <p className="text-sm font-semibold leading-5 text-[#4B2E2B]">Tudo que vocês já contrataram está aqui.</p>
+          <p className="mt-1 text-xs leading-5 text-[#8A716D]">Acompanhe pagamentos, tarefas e documentos.</p>
+        </div>
+        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
+          <Heart className="h-7 w-7" fill="currentColor" />
+        </div>
+      </div>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-sm font-bold text-[#4B2E2B]">Fornecedores fechados</p>
+        <p className="text-xs text-[#8A716D]">{vendors.length + 1} contratados</p>
+      </div>
+      <div className="space-y-3">
         <CasareiAppCard />
         {vendors.map((vendor) => (
           <VendorRow key={vendor.id} vendor={vendor} />
@@ -771,23 +784,25 @@ function ClosedTab({
 
 function CasareiAppCard() {
   return (
-    <article className="rounded-2xl bg-[#FFFDFC] p-3 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+    <article className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
       <div className="flex items-center gap-3">
         <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#F8E7EC] text-[#D96C8A]">
-          <Heart className="h-6 w-6" fill="currentColor" />
+          <Heart className="h-7 w-7" fill="currentColor" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-[#4B2E2B]">casarei</p>
-          <p className="text-xs text-[#8A716D]">App de planejamento</p>
-          <span className="mt-1 inline-flex rounded-full bg-[#EEF3EA] px-2 py-1 text-[10px] font-semibold text-[#5F7752]">
-            Ativo
+          <p className="font-serif text-[17px] font-semibold leading-tight text-[#4B2E2B]">casarei</p>
+          <p className="mt-0.5 text-xs text-[#8A716D]">App de planejamento</p>
+          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#EEF3EA] px-2.5 py-0.5 text-[11px] font-semibold text-[#5F7752]">
+            <CheckCircle2 className="h-3 w-3" />Ativo
           </span>
-          <p className="mt-2 inline-flex rounded-full bg-[#F8F4F1] px-2 py-1 text-[10px] font-semibold text-[#4B2E2B]">
-            Plano Gratuito
-          </p>
-          <p className="mt-2 inline-flex rounded-full bg-[#F7EEDC] px-2 py-1 text-xs font-bold text-[#7B5C2E]">
+          <span className="mt-2 ml-1.5 inline-flex rounded-full bg-[#F7EEDC] px-2.5 py-1 text-xs font-bold text-[#7B5C2E]">
             R$ 0 / mês
-          </p>
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#F8F4F1] text-[#8A716D]">
+            <Heart className="h-4 w-4" />
+          </span>
         </div>
       </div>
     </article>
@@ -795,32 +810,37 @@ function CasareiAppCard() {
 }
 
 function VendorRow({ vendor }: { vendor: Vendor }) {
-  const pendingAmount = Math.max(vendor.totalValue - vendor.paidValue, 0);
+  const hasNextPayment = vendor.nextPayment !== "A definir" && vendor.nextPayment !== "Tudo pago";
+  const nextDateMatch = vendor.nextPayment.match(/\d{2}\/\d{2}(?:\/\d{4})?|\d{1,2} [A-Za-z]{3}/);
+  const nextDateLabel = nextDateMatch ? nextDateMatch[0] : vendor.nextPayment;
+
   return (
-    <article className="rounded-2xl bg-[#FFFDFC] p-3 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+    <article className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
       <div className="flex items-center gap-3">
         <CategoryMark category={vendor.category} large />
         <Link href={`/app/fornecedores/${vendor.id}`} className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-[#4B2E2B]">{vendor.name}</p>
-          <p className="text-xs text-[#8A716D]">{vendor.category}</p>
-          <span className={`mt-1 inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${vendor.contract.signed ? statusTone("Contrato assinado") : statusTone("Contrato pendente")}`}>
-            {vendor.contract.signed ? "Contrato assinado" : "Contrato pendente"}
+          <p className="font-serif text-[17px] font-semibold leading-tight text-[#4B2E2B]">{vendor.name}</p>
+          <p className="mt-0.5 text-xs text-[#8A716D]">{vendor.category}</p>
+          <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${vendor.contract.signed ? "bg-[#EEF3EA] text-[#5F7752]" : "bg-[#FBEEE8] text-[#B96F52]"}`}>
+            {vendor.contract.signed ? <><CheckCircle2 className="h-3 w-3" />Contrato assinado</> : "Contrato pendente"}
           </span>
-          <p className="mt-2 inline-flex rounded-full bg-[#FBEEE8] px-2 py-1 text-[10px] font-semibold text-[#B96F52]">
-            Prox. pagamento: {vendor.nextPayment}
-          </p>
-          <p className="mt-2 inline-flex rounded-full bg-[#F8F4F1] px-2 py-1 text-[10px] font-semibold text-[#4B2E2B]">
-            Pendente: {money(pendingAmount)}
-          </p>
-          <p className="mt-2 inline-flex rounded-full bg-[#F7EEDC] px-2 py-1 text-xs font-bold text-[#7B5C2E]">
+          {hasNextPayment && (
+            <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-[#D28B6E]">
+              <Calendar className="h-3 w-3" />
+              Próx. pagamento: {nextDateLabel}
+            </p>
+          )}
+          <span className="mt-2 inline-flex rounded-full bg-[#F7EEDC] px-2.5 py-1 text-xs font-bold text-[#7B5C2E]">
             {money(vendor.totalValue)}
-          </p>
+          </span>
         </Link>
-        <div className="grid gap-3">
-          <ChevronRight className="h-4 w-4 text-[#D96C8A]" />
-          <a href={`https://wa.me/${vendor.whatsapp}`} target="_blank" rel="noreferrer" className="grid h-8 w-8 place-items-center rounded-full bg-[#25D366] text-white" aria-label="WhatsApp">
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <a href={`https://wa.me/${vendor.whatsapp}`} target="_blank" rel="noreferrer" className="grid h-10 w-10 place-items-center rounded-full bg-[#25D366] text-white shadow-sm" aria-label="WhatsApp">
             <MessageCircle className="h-4 w-4" />
           </a>
+          <Link href={`/app/fornecedores/${vendor.id}`} className="grid h-8 w-8 place-items-center text-[#D96C8A]" aria-label="Ver detalhes">
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </article>
@@ -890,38 +910,59 @@ function QuotesTab({
     );
   }
 
+  const avatarColors = ["bg-[#F8E7EC]", "bg-[#EEF1F4]", "bg-[#EEF3EA]", "bg-[#F7EEDC]"];
+
   return (
     <section>
-      <HeroCard title="Voce esta orçando por categoria." text="Compare propostas e peca ajuda para a Sofia decidir." avatar />
-      <h2 className="mt-5 text-base font-bold text-[#4B2E2B]">Categorias em orçamento</h2>
-      <div className="mt-3 space-y-3">
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+        <div className="max-w-[200px]">
+          <p className="text-sm font-semibold leading-5 text-[#4B2E2B]">Você está cotando por categoria.</p>
+          <p className="mt-1 text-xs leading-5 text-[#8A716D]">Compare propostas e peça ajuda para a Sofia decidir.</p>
+        </div>
+        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-[#F8E7EC] text-[#D96C8A]">
+          <Sparkles className="h-7 w-7" />
+        </div>
+      </div>
+      <p className="mb-3 text-sm font-bold text-[#4B2E2B]">Categorias em cotação</p>
+      <div className="space-y-3">
         {categories.map((category) => {
           const count = proposals.filter((proposal) => proposal.category === category).length;
           return (
-            <article key={category} className="flex items-center gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
-              <CategoryMark category={category} compact />
-              <button type="button" onClick={() => onOpenCategory(category)} className="min-w-0 flex-1 text-left">
-                <p className="text-sm font-bold text-[#4B2E2B]">{category}</p>
-                <p className="text-xs text-[#8A716D]">{count} proposta{count === 1 ? "" : "s"} recebida{count === 1 ? "" : "s"}</p>
-              </button>
-              <Button type="button" variant="outline" onClick={() => count ? onOpenCategory(category) : onPending(category)} className="h-11 rounded-xl border-[#F3C7D2] px-3 text-xs text-[#D96C8A]">
-                {count ? "Ver orçamentos" : "Encontrar"}
-              </Button>
-              <button
-                type="button"
-                onClick={() => onAddQuote(category)}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#F8E7EC] text-[#D96C8A]"
-                aria-label={`Incluir orçamento em ${category}`}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
+            <article key={category} className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+              <div className="flex items-start gap-3">
+                <CategoryMark category={category} compact />
+                <div className="min-w-0 flex-1">
+                  <button type="button" onClick={() => onOpenCategory(category)} className="text-left">
+                    <p className="font-serif text-xl leading-tight text-[#4B2E2B]">{category}</p>
+                    <p className="mt-0.5 text-xs text-[#8A716D]">{count} proposta{count === 1 ? "" : "s"} recebida{count === 1 ? "" : "s"}</p>
+                  </button>
+                  {count > 0 && (
+                    <div className="mt-2 flex">
+                      {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                        <span key={i} className={`-ml-1 first:ml-0 grid h-7 w-7 place-items-center rounded-full ring-2 ring-[#FFFDFC] text-[10px] font-bold text-[#4B2E2B] ${avatarColors[i % avatarColors.length]}`}>
+                          {String.fromCharCode(65 + i)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {count > 0 ? (
+                  <Button type="button" onClick={() => onCompare(category)} className="h-9 shrink-0 rounded-xl bg-[#D96C8A] px-3 text-xs hover:bg-[#C85D7B]">
+                    Comparar com Sofia
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => onPending(category)} className="h-9 shrink-0 rounded-xl border-[#EEE6E1] px-3 text-xs text-[#8A716D]">
+                    Ver fornecedores
+                  </Button>
+                )}
+              </div>
             </article>
           );
         })}
       </div>
-      <Button type="button" onClick={() => onAddQuote(null)} variant="outline" className="mt-4 h-12 w-full rounded-xl border-[#F3C7D2] text-[#D96C8A]">
+      <Button type="button" onClick={() => onAddQuote(null)} className="mt-4 h-12 w-full rounded-xl bg-[#F8E7EC] text-[#D96C8A] hover:bg-[#F3C7D2]">
         <Plus className="h-4 w-4" />
-        Adicionar orçamento
+        Adicionar proposta
       </Button>
     </section>
   );
