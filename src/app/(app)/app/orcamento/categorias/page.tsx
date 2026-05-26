@@ -330,73 +330,77 @@ export default function Page() {
       {selected && (
         <div className="fixed inset-0 z-50 bg-[#2A1A1F]/35" role="dialog" aria-modal="true">
           <button type="button" className="absolute inset-0" onClick={() => setSelected(null)} aria-label="Fechar" />
-          <aside className="absolute bottom-0 right-0 max-h-[92vh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 shadow-2xl md:top-0 md:max-h-none md:max-w-xl md:rounded-l-[32px] md:rounded-tr-none">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Categoria</p>
-                <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">{selected.name}</h2>
-                {CATEGORY_DESCRIPTIONS[selected.name] && (
-                  <p className="mt-1 text-sm text-[#8A716D]">{CATEGORY_DESCRIPTIONS[selected.name]}</p>
+          <aside className="absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col rounded-t-[32px] bg-white shadow-2xl md:top-0 md:max-h-none md:max-w-xl md:rounded-l-[32px] md:rounded-tr-none">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Categoria</p>
+                  <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">{selected.name}</h2>
+                  {CATEGORY_DESCRIPTIONS[selected.name] && (
+                    <p className="mt-1 text-sm text-[#8A716D]">{CATEGORY_DESCRIPTIONS[selected.name]}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]"
+                  aria-label="Fechar"
+                >
+                  <X className="h-5 w-5 text-[#D4537E]" />
+                </button>
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                {[
+                  ["Previsto", selected.planned ? money(selected.planned) : "—"],
+                  ["Usado", money(selected.spent)],
+                  ["Saldo", selected.planned ? money(selected.planned - selected.spent) : "—"],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-2xl bg-[#FFF8F4] p-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A716D]">{label}</p>
+                    <p className="mt-1 font-serif text-xl text-[#4B1528]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {selected.planned > 0 && (
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#F4ECE8]">
+                  <div
+                    className="h-full rounded-full bg-[#639922]"
+                    style={{ width: `${Math.min(100, Math.round((selected.spent / selected.planned) * 100))}%` }}
+                  />
+                </div>
+              )}
+
+              <h3 className="mt-6 font-serif text-2xl text-[#4B1528]">Pagamentos vinculados</h3>
+              <div className="mt-3 space-y-2">
+                {selected.payments.length ? (
+                  selected.payments.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-[#FFF8F4] p-4"
+                    >
+                      <div>
+                        <p className="font-bold text-[#2A1A1F]">{p.supplier}</p>
+                        <p className="mt-0.5 text-xs text-[#8A716D]">
+                          {p.dueDate} · {p.status}
+                        </p>
+                      </div>
+                      <strong className="text-[#4B1528]">{money(p.amount)}</strong>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-2xl bg-[#FFF8F4] p-4 text-sm text-[#8A716D]">
+                    Nenhum pagamento vinculado a esta categoria.
+                  </p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]"
-                aria-label="Fechar"
-              >
-                <X className="h-5 w-5 text-[#D4537E]" />
-              </button>
             </div>
-
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              {[
-                ["Previsto", selected.planned ? money(selected.planned) : "—"],
-                ["Usado", money(selected.spent)],
-                ["Saldo", selected.planned ? money(selected.planned - selected.spent) : "—"],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl bg-[#FFF8F4] p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8A716D]">{label}</p>
-                  <p className="mt-1 font-serif text-xl text-[#4B1528]">{value}</p>
-                </div>
-              ))}
+            <div className="shrink-0 border-t border-[#F0E1DD] bg-white px-5 pb-6 pt-4">
+              <Button type="button" onClick={() => setSelected(null)} className="w-full bg-[#D4537E]">
+                Fechar
+              </Button>
             </div>
-
-            {selected.planned > 0 && (
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#F4ECE8]">
-                <div
-                  className="h-full rounded-full bg-[#639922]"
-                  style={{ width: `${Math.min(100, Math.round((selected.spent / selected.planned) * 100))}%` }}
-                />
-              </div>
-            )}
-
-            <h3 className="mt-6 font-serif text-2xl text-[#4B1528]">Pagamentos vinculados</h3>
-            <div className="mt-3 space-y-2">
-              {selected.payments.length ? (
-                selected.payments.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-[#FFF8F4] p-4"
-                  >
-                    <div>
-                      <p className="font-bold text-[#2A1A1F]">{p.supplier}</p>
-                      <p className="mt-0.5 text-xs text-[#8A716D]">
-                        {p.dueDate} · {p.status}
-                      </p>
-                    </div>
-                    <strong className="text-[#4B1528]">{money(p.amount)}</strong>
-                  </div>
-                ))
-              ) : (
-                <p className="rounded-2xl bg-[#FFF8F4] p-4 text-sm text-[#8A716D]">
-                  Nenhum pagamento vinculado a esta categoria.
-                </p>
-              )}
-            </div>
-            <Button type="button" onClick={() => setSelected(null)} className="mt-5 w-full bg-[#D4537E]">
-              Fechar
-            </Button>
           </aside>
         </div>
       )}

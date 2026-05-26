@@ -33,7 +33,7 @@ export function PlannedCategoryDrawer({ category, onClose, onSave }: PlannedCate
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-casarei-ink/35 p-3 backdrop-blur-sm md:items-center md:justify-center">
       <div className="flex max-h-[92vh] w-full flex-col rounded-[1.75rem] border border-white/80 bg-[#fffdf9] shadow-[0_24px_80px_rgba(42,26,31,0.22)] md:max-w-2xl">
-        <div className="flex-1 overflow-y-auto p-5 md:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-casarei-primary">Categoria planejada</p>

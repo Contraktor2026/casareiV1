@@ -152,20 +152,26 @@ export function GuestFormModal({ open, guest, onClose, onSave }: GuestFormModalP
     <div className="fixed inset-0 z-50 bg-casarei-primary-deep/30 backdrop-blur-sm" role="dialog" aria-modal="true">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Fechar formulario" onClick={onClose} />
       <div className="absolute bottom-0 left-1/2 flex max-h-[92vh] w-full max-w-3xl -translate-x-1/2 flex-col rounded-t-[2rem] bg-[#fffdf9] shadow-2xl md:top-1/2 md:max-h-[88vh] md:-translate-y-1/2 md:rounded-[2rem]">
-        <div className="flex-1 overflow-y-auto p-5 md:p-7">
-          <div className="flex items-start justify-between gap-4">
+        <div className="shrink-0 border-b border-casarei-border-soft px-5 pb-4 pt-5 md:px-7">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-casarei-primary">{guest ? "Editar pessoa querida" : "Novo convidado"}</p>
-              <h2 className="mt-1 font-serif text-3xl font-medium text-casarei-primary-deep">
+              <h2 className="mt-0.5 font-serif text-2xl font-medium text-casarei-primary-deep">
                 {guest ? "Ajustar detalhes" : "Adicionar convidado"}
               </h2>
             </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Fechar">
-              <X className="h-5 w-5" aria-hidden />
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              {!guest && (
+                <Button type="button" variant="outline" onClick={() => submit(true)} className="h-9 rounded-full bg-white px-3 text-xs">+1</Button>
+              )}
+              <Button type="button" onClick={() => submit(false)} className="h-9 rounded-full px-4 text-sm">Salvar</Button>
+              <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Fechar"><X className="h-5 w-5" aria-hidden /></Button>
+            </div>
           </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          {error && <p className="mt-2 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-7">
+          <div className="grid gap-4 md:grid-cols-2">
             <TextField label="Nome" value={form.firstName} onChange={(value) => update("firstName", value)} />
             <TextField label="Sobrenome" value={form.lastName} onChange={(value) => update("lastName", value)} />
             <TextField label="WhatsApp" value={form.phone} onChange={(value) => update("phone", value)} />
@@ -188,23 +194,6 @@ export function GuestFormModal({ open, guest, onClose, onSave }: GuestFormModalP
             <TextField label="Mesa" value={form.tableName} onChange={(value) => update("tableName", value)} />
             <TextArea label="Restricoes alimentares" value={form.foodNote} onChange={(value) => update("foodNote", value)} />
             <TextArea label="Observacoes" value={form.notes} onChange={(value) => update("notes", value)} />
-          </div>
-
-          {error && <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-        </div>
-        <div className="shrink-0 border-t border-[#EEE6E1] bg-[#fffdf9] px-5 pb-6 pt-4 md:px-7">
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            {!guest && (
-              <Button type="button" variant="outline" onClick={() => submit(true)}>
-                Salvar e adicionar outro
-              </Button>
-            )}
-            <Button type="button" onClick={() => submit(false)}>
-              Salvar
-            </Button>
           </div>
         </div>
       </div>

@@ -109,17 +109,21 @@ export function VendorFormModal({
     <div className="fixed inset-0 z-50 bg-[#4B2E2B]/30 backdrop-blur-sm" role="dialog" aria-modal="true">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Fechar" onClick={onClose} />
       <div className="absolute bottom-0 left-1/2 flex max-h-[92vh] w-full max-w-3xl -translate-x-1/2 flex-col rounded-t-[2rem] bg-[#FFFDFC] shadow-2xl md:top-1/2 md:max-h-[88vh] md:-translate-y-1/2 md:rounded-[2rem]">
-        <div className="flex-1 overflow-y-auto p-5 md:p-7">
-          <div className="flex items-start justify-between">
+        <div className="shrink-0 border-b border-[#EEE6E1] px-5 pb-4 pt-5 md:px-7">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-[#D96C8A]">{eyebrow}</p>
-              <h2 className="mt-1 font-serif text-3xl text-[#4B2E2B]">{title}</h2>
+              <h2 className="mt-0.5 font-serif text-2xl text-[#4B2E2B]">{title}</h2>
             </div>
-            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" aria-hidden />
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button type="button" onClick={() => save(true)} variant="outline" className="h-9 rounded-full bg-white px-3 text-xs">+1</Button>
+              <Button type="button" onClick={() => save(false)} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm text-white hover:bg-[#C85D7B]">Salvar</Button>
+              <Button type="button" variant="ghost" size="icon" onClick={onClose}><X className="h-5 w-5" aria-hidden /></Button>
+            </div>
           </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-7">
+          <div className="grid gap-4 md:grid-cols-2">
             <Field label="Nome do fornecedor" value={name} onChange={setName} />
             <label className="text-sm font-medium text-[#4B2E2B]">
               Categoria
@@ -156,13 +160,6 @@ export function VendorFormModal({
             </label>
             <Field label="O que esta incluso" value={included} onChange={setIncluded} placeholder="Separe por virgulas" />
             <Field label="Observacoes" value={note} onChange={setNote} />
-          </div>
-        </div>
-        <div className="shrink-0 border-t border-[#EEE6E1] bg-[#FFFDFC] px-5 pb-6 pt-4 md:px-7">
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" className="bg-white" onClick={onClose}>Cancelar</Button>
-            <Button type="button" variant="outline" className="bg-white" onClick={() => save(true)}>Salvar e adicionar outro</Button>
-            <Button type="button" onClick={() => save(false)} className="bg-[#D96C8A] hover:bg-[#C85D7B]">Salvar fornecedor</Button>
           </div>
         </div>
       </div>

@@ -349,7 +349,7 @@ export function BudgetPage() {
         {message ? <p className="rounded-2xl bg-[#EAF3DE] px-4 py-3 text-sm font-bold text-[#27500A]">{message}</p> : null}
 
         {/* ── Categorias ── */}
-        <SimplePanel title="Categorias" action={<Link href="/app/orcamento/categorias">Ver todas</Link>}>
+        <SimplePanel title="Categorias" subtitle="Quanto foi reservado e gasto em cada área do casamento" action={<Link href="/app/orcamento/categorias">Ver todas</Link>}>
           <div className="space-y-2">
             {categorySummaries.slice(0, 5).map((category) => (
               <CategoryRow key={category.id} category={category} onOpen={() => setSelectedCategory(category)} />
@@ -391,12 +391,15 @@ function MetricCard({ label, value, tone, icon, href }: { label: string; value: 
 }
 
 
-function SimplePanel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+function SimplePanel({ title, subtitle, action, children }: { title: string; subtitle?: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="rounded-[26px] bg-white p-5 shadow-[0_14px_36px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-serif text-2xl text-[#4B1528]">{title}</h2>
-        {action ? <div className="text-sm font-bold text-[#D4537E]">{action}</div> : null}
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-2xl text-[#4B1528]">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs text-[#8A716D]">{subtitle}</p>}
+        </div>
+        {action ? <div className="shrink-0 text-sm font-bold text-[#D4537E]">{action}</div> : null}
       </div>
       {children}
     </section>
@@ -471,28 +474,33 @@ function CategoryDetailModal({ category, payments, onClose }: { category: Budget
   return (
     <div className="fixed inset-0 z-50 bg-[#2A1A1F]/35" role="dialog" aria-modal="true">
       <button type="button" className="absolute inset-0" aria-label="Fechar" onClick={onClose} />
-      <aside className="absolute bottom-0 right-0 max-h-[92vh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 shadow-2xl md:top-0 md:max-h-none md:max-w-xl md:rounded-l-[32px] md:rounded-tr-none">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Categoria</p>
-            <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">{category.name}</h2>
-            <p className="mt-1 text-sm text-[#8A716D]">{balance >= 0 ? `Ainda sobram ${money(balance)}` : `Passou ${money(Math.abs(balance))} do limite`}</p>
+      <aside className="absolute bottom-0 right-0 flex max-h-[92vh] w-full flex-col rounded-t-[32px] bg-white shadow-2xl md:top-0 md:max-h-none md:max-w-xl md:rounded-l-[32px] md:rounded-tr-none">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Categoria</p>
+              <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">{category.name}</h2>
+              <p className="mt-1 text-sm text-[#8A716D]">{balance >= 0 ? `Ainda sobram ${money(balance)}` : `Passou ${money(Math.abs(balance))} do limite`}</p>
+            </div>
+            <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <Info label="Previsto" value={money(category.planned)} />
-          <Info label="Usado" value={money(category.spent)} />
-          <Info label="Saldo" value={money(balance)} />
-        </div>
-        <section className="mt-5">
-          <h3 className="font-serif text-2xl text-[#4B1528]">Fornecedores e pagamentos</h3>
-          <div className="mt-3 space-y-2">
-            {relatedPayments.length ? relatedPayments.map((payment) => <DueRow key={payment.id} payment={payment} />) : <p className="rounded-2xl bg-[#FFF8F4] p-4 text-sm text-[#8A716D]">Sem parcelas vinculadas ainda.</p>}
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <Info label="Previsto" value={money(category.planned)} />
+            <Info label="Usado" value={money(category.spent)} />
+            <Info label="Saldo" value={money(balance)} />
           </div>
-        </section>
+          <section className="mt-5">
+            <h3 className="font-serif text-2xl text-[#4B1528]">Fornecedores e pagamentos</h3>
+            <div className="mt-3 space-y-2">
+              {relatedPayments.length ? relatedPayments.map((payment) => <DueRow key={payment.id} payment={payment} />) : <p className="rounded-2xl bg-[#FFF8F4] p-4 text-sm text-[#8A716D]">Sem parcelas vinculadas ainda.</p>}
+            </div>
+          </section>
+        </div>
+        <div className="shrink-0 border-t border-[#F0E1DD] bg-white px-5 pb-6 pt-4">
+          <button type="button" onClick={onClose} className="h-11 w-full rounded-2xl bg-[#D4537E] text-sm font-bold text-white">Fechar</button>
+        </div>
       </aside>
     </div>
   );
@@ -528,24 +536,32 @@ function ExpenseModal({ vendors, onClose, onSave }: { vendors: Vendor[]; onClose
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 md:place-items-center md:p-6">
       <section className="flex max-h-[92vh] w-full flex-col rounded-t-[32px] bg-white shadow-[0_24px_90px_rgba(75,46,43,0.24)] md:max-w-2xl md:rounded-[32px]">
-        <div className="flex-1 overflow-y-auto p-5">
-          <div className="flex items-start justify-between gap-4">
+        {/* ── Header fixo com botão salvar sempre visível ── */}
+        <div className="shrink-0 border-b border-[#F0E1DD] px-5 pb-4 pt-5">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Adicionar despesa</p>
-              <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">De onde vem esse gasto?</h2>
+              <h2 className="mt-0.5 font-serif text-2xl text-[#4B1528]">De onde vem esse gasto?</h2>
             </div>
-            <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button type="button" disabled={!canSave} onClick={() => onSave(draft)} className="h-9 rounded-full bg-[#D4537E] px-4 text-sm text-white hover:bg-[#993556] disabled:opacity-40">
+                Salvar
+              </Button>
+              <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-
-          <div className="mt-5 grid grid-cols-3 gap-2">
+        </div>
+        {/* ── Conteúdo scrollável ── */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="grid grid-cols-3 gap-2">
             <ModeButton active={draft.mode === "existing"} onClick={() => update("mode", "existing")} title="Fornecedor" />
             <ModeButton active={draft.mode === "new"} onClick={() => update("mode", "new")} title="Novo" />
             <ModeButton active={draft.mode === "single"} onClick={() => update("mode", "single")} title="Avulsa" />
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
             {draft.mode === "existing" ? (
               <Field label="Fornecedor existente">
                 <select value={draft.vendorId} onChange={(event) => update("vendorId", event.target.value)} className={controlClass}>
@@ -578,11 +594,6 @@ function ExpenseModal({ vendors, onClose, onSave }: { vendors: Vendor[]; onClose
             <TextField label="Contrato/comprovante" value={draft.receiptName} onChange={(value) => update("receiptName", value)} placeholder="Nome do arquivo ou link" />
             <TextField label="Observação" value={draft.note} onChange={(value) => update("note", value)} placeholder="Ex: sinal do contrato" />
           </div>
-        </div>
-        <div className="shrink-0 border-t border-[#F0E1DD] bg-white px-5 pb-6 pt-4">
-          <Button type="button" disabled={!canSave} onClick={() => onSave(draft)} className="h-12 w-full bg-[#D4537E] text-white hover:bg-[#993556] disabled:opacity-50">
-            Salvar despesa
-          </Button>
         </div>
       </section>
     </div>
