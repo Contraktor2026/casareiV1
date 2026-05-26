@@ -109,6 +109,15 @@ export function saveBudgetAllocation(allocation: BudgetAllocation): void {
   window.localStorage.setItem(budgetKey(), JSON.stringify(allocation));
 }
 
+export function saveStoredVendorCategories(categories: string[]): void {
+  if (typeof window === "undefined") return;
+  const plan = getStoredPlan();
+  const next: StoredPlan = plan
+    ? { ...plan, vendorCategories: categories }
+    : { generatedAt: new Date().toISOString(), vendorCategories: categories, tasks: [] };
+  window.localStorage.setItem(planKey(), JSON.stringify(next));
+}
+
 export function generateAndStorePlan(data: OnboardingData): void {
   if (typeof window === "undefined") return;
   const existing = getStoredPlan();

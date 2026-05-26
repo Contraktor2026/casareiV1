@@ -24,7 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { getOnboardingData } from "@/lib/client/supabase-auth";
-import { getBudgetAllocation, getStoredVendorCategories, saveBudgetAllocation } from "@/lib/client/planning-store";
+import { getBudgetAllocation, getStoredVendorCategories, saveBudgetAllocation, saveStoredVendorCategories } from "@/lib/client/planning-store";
 import { getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
 import { getVendorFinancePayments, saveVendorFinancePayment, subscribeVendorFinancePayments } from "@/lib/client/vendor-finance-sync";
 import type { BudgetCategory, BudgetPayment, BudgetPaymentStatus } from "@/types/budget";
@@ -62,6 +62,12 @@ function formatCurrencyInput(value: string) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
+function formatAllocationValue(value: number): string {
+  if (!value) return "";
+  const digits = String(Math.round(value * 100));
+  return formatCurrencyInput(digits);
+}
+
 function daysBetween(date: string) {
   const due = new Date(`${date}T12:00:00`);
   return Math.ceil((due.getTime() - today.getTime()) / 86400000);
@@ -88,6 +94,7 @@ export function BudgetPage() {
   const [message, setMessage] = useState("");
   const [allocationDraft, setAllocationDraft] = useState<{ [k: string]: string }>({});
   const [vendorCategories, setVendorCategories] = useState<string[]>([]);
+  const [newCatInput, setNewCatInput] = useState("");
   const allPayments = useMemo(() => sortByDueDate([...vendorPayments]), [vendorPayments]);
 
   useEffect(() => {
@@ -98,7 +105,7 @@ export function BudgetPage() {
     const saved = getBudgetAllocation();
     const draft: { [k: string]: string } = {};
     (cats.length > 0 ? cats : ["Espaço", "Buffet", "Fotografia", "Decoração", "Música/DJ", "Cerimonial"]).forEach((cat) => {
-      draft[cat] = saved[cat] ? String(saved[cat]) : "";
+      draft[cat] = saved[cat] ? formatAllocationValue(saved[cat]) : "";
     });
     setAllocationDraft(draft);
     return subscribeVendorFinancePayments(() => {
@@ -141,6 +148,16 @@ export function BudgetPage() {
       };
     });
   }, [vendorCategories, allPayments]);
+
+  function addAllocationCategory() {
+    const name = newCatInput.trim();
+    if (!name || vendorCategories.includes(name)) return;
+    const updated = [...vendorCategories, name];
+    setVendorCategories(updated);
+    setAllocationDraft((prev) => ({ ...prev, [name]: "" }));
+    saveStoredVendorCategories(updated);
+    setNewCatInput("");
+  }
 
   function saveExpense(draft: ExpenseDraft) {
     const amount = numberFromText(draft.amount);
@@ -230,12 +247,17 @@ export function BudgetPage() {
           {showAllocation && (
             <div className="mt-4 space-y-3">
               {plannedAmount > 0 && (() => {
-                const allocTotal = Object.values(allocationDraft).reduce((s, v) => s + (Number(v) || 0), 0);
+                const allocTotal = Object.values(allocationDraft).reduce((s, v) => s + (numberFromText(v) || 0), 0);
                 const remaining = plannedAmount - allocTotal;
                 return (
                   <div className="flex items-baseline gap-2 rounded-2xl bg-[#FFF8F4] px-4 py-3">
                     <strong className="font-serif text-2xl text-[#4B1528]">{money(Math.max(0, remaining))}</strong>
                     <span className="text-xs text-[#8A716D]">restante de {money(plannedAmount)}</span>
+                    {remaining < 0 && (
+                      <span className="rounded-full bg-[#FCEBEB] px-2 py-0.5 text-[11px] font-bold text-[#791F1F]">
+                        {money(Math.abs(remaining))} acima
+                      </span>
+                    )}
                   </div>
                 );
               })()}
@@ -243,19 +265,47 @@ export function BudgetPage() {
                 <div key={cat} className="flex items-center gap-3">
                   <span className="flex-1 text-sm font-semibold text-[#4B1528]">{cat}</span>
                   <input
-                    type="number"
-                    placeholder="0"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ 0,00"
                     value={allocationDraft[cat] ?? ""}
-                    onChange={(e) => setAllocationDraft((prev) => ({ ...prev, [cat]: e.target.value }))}
+                    onChange={(e) => setAllocationDraft((prev) => ({
+                      ...prev,
+                      [cat]: formatCurrencyInput(e.target.value),
+                    }))}
                     onBlur={() => {
                       const out: { [k: string]: number } = {};
-                      Object.entries(allocationDraft).forEach(([k, v]) => { if (Number(v) > 0) out[k] = Number(v); });
+                      Object.entries(allocationDraft).forEach(([k, v]) => {
+                        const n = numberFromText(v);
+                        if (n > 0) out[k] = n;
+                      });
                       saveBudgetAllocation(out);
                     }}
                     className="w-36 rounded-2xl border border-[#EEE6E1] bg-[#FFF8F4] px-3 py-2 text-right text-sm font-semibold text-[#2A1A1F] outline-none focus:border-[#D4537E]"
                   />
                 </div>
               ))}
+              {/* Nova categoria */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={newCatInput}
+                  onChange={(e) => setNewCatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addAllocationCategory();
+                  }}
+                  placeholder="Nova categoria..."
+                  className="flex-1 rounded-2xl border border-dashed border-[#D4537E]/40 bg-[#FFF8F4] px-3 py-2 text-sm font-semibold text-[#4B1528] outline-none placeholder:text-[#C4B0AA] focus:border-[#D4537E]"
+                />
+                <button
+                  type="button"
+                  onClick={addAllocationCategory}
+                  disabled={!newCatInput.trim()}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#D4537E] text-white disabled:opacity-40"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           )}
         </section>

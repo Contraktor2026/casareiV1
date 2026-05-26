@@ -16,9 +16,10 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { getOnboardingData, getSession, saveOnboardingData } from "@/lib/client/supabase-auth";
+import { getOnboardingData, getSession, getUserId, saveOnboardingData } from "@/lib/client/supabase-auth";
 import { getStoredGuests } from "@/lib/client/guests-store";
-import { getStoredPlanTasks, type PlanTask } from "@/lib/client/planning-store";
+import { getBudgetAllocation, getStoredPlanTasks, type PlanTask } from "@/lib/client/planning-store";
+import { getStoredProposals } from "@/lib/client/quotes-store";
 import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
 
@@ -87,11 +88,14 @@ export default function DashboardPage() {
   const [nextTask, setNextTask] = useState<PlanTask | null>(null);
   const [editingDate, setEditingDate] = useState(false);
   const [dateInput, setDateInput] = useState("");
+  const [firstSteps, setFirstSteps] = useState({ budgetSet: false, guestsSet: false, quotesSet: false, dismissed: false });
   const dailyTip = useMemo(() => getDailyTip(), []);
 
   useEffect(() => {
-    setOnboarding(getOnboardingData());
-    setGuestCount(getStoredGuests().length);
+    const ob = getOnboardingData();
+    setOnboarding(ob);
+    const guests = getStoredGuests();
+    setGuestCount(guests.length);
     setVendorCount(getStoredVendors().length);
     const planTasks = getStoredPlanTasks();
     setTasksDone(planTasks.filter((t) => t.status === "Concluída").length);
@@ -102,7 +106,24 @@ export default function DashboardPage() {
       return a.dueDateIso.localeCompare(b.dueDateIso);
     });
     setNextTask(pending[0] ?? null);
+    const uid = getUserId();
+    const dismissKey = uid ? `casarei:${uid}:first-steps-dismissed` : "casarei:first-steps-dismissed";
+    const dismissed = typeof window !== "undefined" && window.localStorage.getItem(dismissKey) === "1";
+    const allocation = getBudgetAllocation();
+    setFirstSteps({
+      budgetSet: Object.keys(allocation).length > 0,
+      guestsSet: guests.length > 0,
+      quotesSet: getStoredProposals().length > 0 || getStoredVendors().length > 0,
+      dismissed,
+    });
   }, []);
+
+  function dismissFirstSteps() {
+    const uid = getUserId();
+    const dismissKey = uid ? `casarei:${uid}:first-steps-dismissed` : "casarei:first-steps-dismissed";
+    if (typeof window !== "undefined") window.localStorage.setItem(dismissKey, "1");
+    setFirstSteps((prev) => ({ ...prev, dismissed: true }));
+  }
 
   const session = typeof window !== "undefined" ? getSession() : null;
   const firstName =
@@ -229,6 +250,64 @@ export default function DashboardPage() {
         <StatPill value={String(tasksDone)} label="tarefas feitas" />
         <StatPill value={String(vendorCount)} label="fornecedores" />
       </div>
+
+      {/* ── Primeiros passos ── */}
+      {!firstSteps.dismissed && !(firstSteps.budgetSet && firstSteps.guestsSet && firstSteps.quotesSet) && (
+        <section
+          className="rounded-[20px] bg-white p-5 ring-1 ring-[#EEE6E1]"
+          style={{ boxShadow: "0 4px 20px rgba(75,46,43,0.06)" }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Por onde começar</p>
+              <h2 className="mt-0.5 font-serif text-xl text-[#4B2E2B]">3 primeiros passos do planejamento</h2>
+            </div>
+            <button type="button" onClick={dismissFirstSteps} className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F5EFEb] text-[#8A716D]" aria-label="Fechar">
+              ×
+            </button>
+          </div>
+          <div className="mt-4 space-y-2">
+            {[
+              {
+                done: firstSteps.budgetSet,
+                href: "/app/orcamento",
+                icon: "💰",
+                title: "Distribuir o orçamento",
+                sub: "Defina quanto reservar para cada fornecedor",
+              },
+              {
+                done: firstSteps.guestsSet,
+                href: "/app/convidados",
+                icon: "👥",
+                title: "Montar a lista de convidados",
+                sub: "A quantidade de pessoas define quase tudo",
+              },
+              {
+                done: firstSteps.quotesSet,
+                href: "/app/cotacoes",
+                icon: "📋",
+                title: "Solicitar as primeiras cotações",
+                sub: "Compare propostas com a IA e feche fornecedores",
+              },
+            ].map((step) => (
+              <Link
+                key={step.href}
+                href={step.href}
+                className={`flex items-center gap-3 rounded-[14px] px-3 py-3 transition active:bg-[#F8F4F1] ${step.done ? "opacity-60" : ""}`}
+              >
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-base ${step.done ? "bg-[#EAF3DE]" : "bg-[#F8E7EC]"}`}>
+                  {step.done ? "✓" : step.icon}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className={`block text-sm font-semibold ${step.done ? "text-[#9E8880] line-through" : "text-[#4B2E2B]"}`}>{step.title}</span>
+                  {!step.done && <span className="mt-0.5 block text-xs text-[#8A716D]">{step.sub}</span>}
+                </span>
+                {!step.done && <ChevronRight className="h-4 w-4 shrink-0 text-[#C4B0AA]" />}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Próxima tarefa do planejamento ── */}
       {nextTask && (
