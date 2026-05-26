@@ -93,6 +93,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
   const [view, setView] = useState<ViewMode>("main");
   const [currentVendor, setCurrentVendor] = useState<Vendor>(() => vendor ?? createEmptyVendor(vendorId));
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalKind, setPaymentModalKind] = useState<"contract" | "extra">("contract");
   const [savedMessage, setSavedMessage] = useState("");
   const [draft, setDraft] = useState(() => draftFromVendor(vendor ?? createEmptyVendor(vendorId)));
   const [includedText, setIncludedText] = useState((vendor ?? createEmptyVendor(vendorId)).included.join("\n"));
@@ -118,10 +119,11 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
   }, [vendor, vendorId]);
 
   const includedItems = useMemo(() => includedText.split("\n").map((item) => item.trim()).filter(Boolean), [includedText]);
-  const paidValue = payments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
+  const contractPayments = payments.filter((payment) => (payment.kind ?? "contract") === "contract");
+  const paidValue = contractPayments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
   const totalValue = Number(draft.totalValue) || currentVendor.totalValue || 0;
   const pendingValue = Math.max(totalValue - paidValue, 0);
-  const nextOpenPayment = payments.find((payment) => payment.status !== "pago");
+  const nextOpenPayment = contractPayments.find((payment) => payment.status !== "pago");
   const pendingDeliveries = deliveries.filter((d) => d.status !== "concluido");
   const doneDeliveries = deliveries.filter((d) => d.status === "concluido");
 
@@ -165,50 +167,59 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
     setSavedMessage("Salvo.");
   }
 
-  function addPayment(payment: { amount: number; dueDate: string; method: string; status: "pago" | "pendente" | "proximo" }) {
+  function addPayment(payment: { amount: number; dueDate: string; method: string; status: "pago" | "pendente" | "proximo"; description?: string; kind?: "contract" | "extra" }) {
+    const kind = payment.kind ?? "contract";
+    const description = payment.description?.trim();
+    const paymentName = kind === "extra" ? description || "Despesa extra" : `${payment.method} - ${formatDisplayDate(payment.dueDate)}`;
     const financePayment = saveVendorFinancePayment({
       vendorId: currentVendor.id,
-      supplier: draft.name,
+      supplier: kind === "extra" && description ? `${draft.name} - ${description}` : draft.name,
       category: draft.category,
       amount: payment.amount,
       dueDate: payment.dueDate,
       method: payment.method,
-      status: payment.status
+      status: payment.status,
+      note: description,
+      vendorPaymentKind: kind,
+      vendorPaymentName: paymentName
     });
     const vendorPayment: VendorPayment = {
       id: financePayment.id,
-      name: `${payment.method} - ${formatDisplayDate(payment.dueDate)}`,
+      name: paymentName,
       amount: payment.amount,
       dueDate: payment.dueDate,
       status: payment.status,
-      method: payment.method
+      method: payment.method,
+      kind
     };
     const nextPayments = [vendorPayment, ...payments];
     setPayments(nextPayments);
-    const paid = nextPayments.filter((item) => item.status === "pago").reduce((sum, item) => sum + item.amount, 0);
+    const paid = nextPayments
+      .filter((item) => (item.kind ?? "contract") === "contract" && item.status === "pago")
+      .reduce((sum, item) => sum + item.amount, 0);
     update("paidValue", String(paid));
-    setSavedMessage("Pagamento registrado.");
+    setSavedMessage(kind === "extra" ? "Despesa extra adicionada." : "Pagamento registrado.");
   }
 
   function markPaymentPaid(paymentId: string) {
     const nextPayments = payments.map((payment) => (payment.id === paymentId ? { ...payment, status: "pago" as const } : payment));
     setPayments(nextPayments);
     updateVendorFinancePaymentStatus(paymentId, "pago");
-    update("paidValue", String(nextPayments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0)));
+    update("paidValue", String(nextPayments.filter((payment) => (payment.kind ?? "contract") === "contract" && payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0)));
     setSavedMessage("Pagamento marcado como pago.");
   }
 
   function deletePayment(paymentId: string) {
     const next = payments.filter((p) => p.id !== paymentId);
     setPayments(next);
-    update("paidValue", String(next.filter((p) => p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
+    update("paidValue", String(next.filter((p) => (p.kind ?? "contract") === "contract" && p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
     setSavedMessage("Pagamento removido.");
   }
 
   function editPayment(paymentId: string, amount: number, dueDate: string) {
     const next = payments.map((p) => p.id === paymentId ? { ...p, amount, dueDate } : p);
     setPayments(next);
-    update("paidValue", String(next.filter((p) => p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
+    update("paidValue", String(next.filter((p) => (p.kind ?? "contract") === "contract" && p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
     setSavedMessage("Pagamento atualizado.");
   }
 
@@ -270,10 +281,22 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
       onMarkPaid={markPaymentPaid}
       onDelete={deletePayment}
       onEdit={editPayment}
-      onAddPayment={() => setShowPaymentModal(true)}
+      onAddPayment={(kind) => {
+        setPaymentModalKind(kind);
+        setShowPaymentModal(true);
+      }}
       savedMessage={savedMessage}
       onSave={() => persist()}
-      modal={<VendorPaymentModal open={showPaymentModal} supplier={draft.name} onClose={() => setShowPaymentModal(false)} onSave={addPayment} />}
+      modal={
+        <VendorPaymentModal
+          open={showPaymentModal}
+          supplier={draft.name}
+          title={paymentModalKind === "extra" ? "Adicionar despesa extra" : "Registrar pagamento"}
+          mode={paymentModalKind}
+          onClose={() => setShowPaymentModal(false)}
+          onSave={addPayment}
+        />
+      }
     />;
   }
 
@@ -440,14 +463,21 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
       </div>
 
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={() => setShowPaymentModal(true)} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">
+        <Button type="button" onClick={() => { setPaymentModalKind("contract"); setShowPaymentModal(true); }} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">
           <Wallet className="h-4 w-4" />
           Registrar pagamento
         </Button>
       </div>
 
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFiles} />
-      <VendorPaymentModal open={showPaymentModal} supplier={draft.name} onClose={() => setShowPaymentModal(false)} onSave={addPayment} />
+      <VendorPaymentModal
+        open={showPaymentModal}
+        supplier={draft.name}
+        title={paymentModalKind === "extra" ? "Adicionar despesa extra" : "Registrar pagamento"}
+        mode={paymentModalKind}
+        onClose={() => setShowPaymentModal(false)}
+        onSave={addPayment}
+      />
     </>
   );
 }
@@ -649,7 +679,7 @@ function FinanceView({
   onMarkPaid: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, amount: number, dueDate: string) => void;
-  onAddPayment: () => void;
+  onAddPayment: (kind: "contract" | "extra") => void;
   savedMessage: string;
   onSave: () => void;
   modal: React.ReactNode;
@@ -657,6 +687,9 @@ function FinanceView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editDate, setEditDate] = useState("");
+  const extraTotal = payments
+    .filter((payment) => payment.kind === "extra")
+    .reduce((sum, payment) => sum + payment.amount, 0);
 
   function startEdit(payment: VendorPayment) {
     setEditingId(payment.id);
@@ -680,6 +713,14 @@ function FinanceView({
             <MetricTile label="Pago" value={money(paidValue)} green />
             <MetricTile label="Pendente" value={money(pendingValue)} warn />
           </div>
+          {extraTotal > 0 ? (
+            <div className="mt-3 rounded-xl bg-[#F7EEDC] px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Despesas extras</p>
+                <p className="text-sm font-bold text-[#9A6A2F]">{money(extraTotal)}</p>
+              </div>
+            </div>
+          ) : null}
           <label className="mt-3 block text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">
             Valor total contratado
             <input
@@ -695,7 +736,7 @@ function FinanceView({
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
         <div className="space-y-2">
           {payments.length === 0 && (
-            <p className="rounded-2xl bg-[#FFFDFC] p-5 text-sm text-[#8A716D]">Nenhum lançamento ainda. Adicione o primeiro pagamento.</p>
+            <p className="rounded-2xl bg-[#FFFDFC] p-5 text-sm text-[#8A716D]">Nenhum lançamento ainda. Adicione o primeiro pagamento ou uma despesa extra.</p>
           )}
           {payments.map((payment) => (
             <article key={payment.id} className="overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
@@ -731,7 +772,12 @@ function FinanceView({
               ) : (
                 <div className="flex items-center gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[#4B2E2B]">{payment.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-[#4B2E2B]">{payment.name}</p>
+                      {(payment.kind ?? "contract") === "extra" ? (
+                        <span className="rounded-full bg-[#F7EEDC] px-2 py-0.5 text-[10px] font-bold text-[#9A6A2F]">Despesa extra</span>
+                      ) : null}
+                    </div>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8A716D]">
                       <Calendar className="h-3 w-3" />
                       {payment.dueDate ? new Date(`${payment.dueDate}T12:00:00`).toLocaleDateString("pt-BR") : "Data não definida"}
@@ -763,9 +809,14 @@ function FinanceView({
         </div>
       </div>
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={onAddPayment} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">
-          <Plus className="h-4 w-4" />Adicionar pagamento
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" onClick={() => onAddPayment("contract")} className="h-13 rounded-xl bg-[#D96C8A] py-3.5 text-sm font-semibold hover:bg-[#C85D7B]">
+            <Plus className="h-4 w-4" />Pagamento
+          </Button>
+          <Button type="button" onClick={() => onAddPayment("extra")} variant="outline" className="h-13 rounded-xl border-[#D96C8A] bg-white py-3.5 text-sm font-semibold text-[#D96C8A] hover:bg-[#FFF4F7]">
+            <Plus className="h-4 w-4" />Despesa extra
+          </Button>
+        </div>
       </div>
       {modal}
     </div>
@@ -1078,17 +1129,18 @@ function draftFromVendor(vendor: Vendor) {
   };
 }
 
-function mergeVendorPayments(vendorPayments: VendorPayment[], financePayments: Array<{ id: string; amount: number; dueDate: string; status: VendorPayment["status"]; method?: string }>) {
+function mergeVendorPayments(vendorPayments: VendorPayment[], financePayments: Array<{ id: string; amount: number; dueDate: string; status: VendorPayment["status"]; method?: string; vendorPaymentKind?: VendorPayment["kind"]; vendorPaymentName?: string }>) {
   const existingIds = new Set(vendorPayments.map((payment) => payment.id));
   const fromFinance: VendorPayment[] = financePayments
     .filter((payment) => !existingIds.has(payment.id))
     .map((payment) => ({
       id: payment.id,
-      name: `${payment.method ?? "Pagamento"} - ${formatDisplayDate(payment.dueDate)}`,
+      name: payment.vendorPaymentName ?? `${payment.method ?? "Pagamento"} - ${formatDisplayDate(payment.dueDate)}`,
       amount: payment.amount,
       dueDate: payment.dueDate,
       status: payment.status,
-      method: payment.method
+      method: payment.method,
+      kind: payment.vendorPaymentKind ?? "contract"
     }));
   return [...fromFinance, ...vendorPayments];
 }

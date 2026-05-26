@@ -28,6 +28,9 @@ export type BudgetPayment = {
   method?: string;
   source?: "mock" | "fornecedor";
   vendorId?: string;
+  vendorPaymentKind?: "contract" | "extra";
+  vendorPaymentName?: string;
+  note?: string;
 };
 
 export type BudgetProjection = {

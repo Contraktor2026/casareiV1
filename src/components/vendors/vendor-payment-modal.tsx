@@ -10,8 +10,10 @@ type PaymentRow = { value: string; date: string };
 type VendorPaymentModalProps = {
   open: boolean;
   supplier: string;
+  title?: string;
+  mode?: "contract" | "extra";
   onClose: () => void;
-  onSave: (payment: { amount: number; dueDate: string; method: string; status: "pago" | "pendente" | "proximo" }) => void;
+  onSave: (payment: { amount: number; dueDate: string; method: string; status: "pago" | "pendente" | "proximo"; description?: string; kind?: "contract" | "extra" }) => void;
 };
 
 const paymentMethods = ["Pix", "Cartão de crédito", "Cartão de débito", "Boleto", "Transferência", "Dinheiro"];
@@ -28,9 +30,10 @@ function parseCurrencyInput(raw: string): number {
   return Number(raw.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, "")) || 0;
 }
 
-export function VendorPaymentModal({ open, supplier, onClose, onSave }: VendorPaymentModalProps) {
+export function VendorPaymentModal({ open, supplier, title = "Registrar pagamento", mode = "contract", onClose, onSave }: VendorPaymentModalProps) {
   const [method, setMethod] = useState("Pix");
   const [status, setStatus] = useState<"pago" | "pendente" | "proximo">("pendente");
+  const [description, setDescription] = useState("");
   const [installmentCount, setInstallmentCount] = useState(1);
   const [rows, setRows] = useState<PaymentRow[]>([{ value: "", date: "" }]);
   const [error, setError] = useState("");
@@ -57,13 +60,14 @@ export function VendorPaymentModal({ open, supplier, onClose, onSave }: VendorPa
     }
 
     validRows.forEach((r) => {
-      onSave({ amount: parseCurrencyInput(r.value), dueDate: r.date, method, status });
+      onSave({ amount: parseCurrencyInput(r.value), dueDate: r.date, method, status, description: description.trim(), kind: mode });
     });
 
     setRows([{ value: "", date: "" }]);
     setInstallmentCount(1);
     setMethod("Pix");
     setStatus("pendente");
+    setDescription("");
     setError("");
     onClose();
   }
@@ -76,7 +80,7 @@ export function VendorPaymentModal({ open, supplier, onClose, onSave }: VendorPa
 
         <div className="shrink-0 flex items-start justify-between gap-4 border-b border-[#EEE6E1] px-5 pb-4 pt-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8A716D]">Registrar pagamento</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8A716D]">{title}</p>
             <h2 className="mt-1 font-serif text-2xl text-[#4B2E2B]">{supplier}</h2>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -91,6 +95,18 @@ export function VendorPaymentModal({ open, supplier, onClose, onSave }: VendorPa
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
           <div className="space-y-4">
+            {mode === "extra" ? (
+              <label className="block text-sm font-medium text-[#4B2E2B]">
+                Descrição da despesa
+                <input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ex: Taxa de deslocamento, hora extra, degustação"
+                  className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
+                />
+              </label>
+            ) : null}
+
             <label className="block text-sm font-medium text-[#4B2E2B]">
               Forma de pagamento
               <select

@@ -35,6 +35,7 @@ export type VendorPayment = {
   status: "pago" | "pendente" | "proximo" | "atrasado";
   method?: string;
   receipt?: string;
+  kind?: "contract" | "extra";
 };
 
 export type VendorDelivery = {

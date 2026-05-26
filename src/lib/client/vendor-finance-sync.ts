@@ -15,6 +15,8 @@ export type VendorFinancePaymentInput = {
   method: string;
   status?: BudgetPaymentStatus;
   note?: string;
+  vendorPaymentKind?: "contract" | "extra";
+  vendorPaymentName?: string;
 };
 
 export function getVendorFinancePayments(): BudgetPayment[] {
@@ -41,7 +43,10 @@ export function saveVendorFinancePayment(input: VendorFinancePaymentInput) {
     status: input.status ?? "pendente",
     method: input.method,
     source: "fornecedor",
-    vendorId: input.vendorId
+    vendorId: input.vendorId,
+    vendorPaymentKind: input.vendorPaymentKind,
+    vendorPaymentName: input.vendorPaymentName,
+    note: input.note
   };
 
   const current = getVendorFinancePayments();
@@ -84,8 +89,9 @@ function syncStoredVendorPaymentStatus(paymentId: string, status: BudgetPaymentS
   if (!vendor) return;
 
   const payments = vendor.payments.map((payment) => (payment.id === paymentId ? { ...payment, status } : payment));
-  const paidValue = payments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
-  const nextPayment = payments.find((payment) => payment.status !== "pago");
+  const contractPayments = payments.filter((payment) => (payment.kind ?? "contract") === "contract");
+  const paidValue = contractPayments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
+  const nextPayment = contractPayments.find((payment) => payment.status !== "pago");
 
   upsertStoredVendor({
     ...vendor,
