@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, Heart, Sparkles } from "lucide-react";
+import { ChevronLeft, Heart, Sparkles, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { BottomNavigation } from "@/components/layout/bottom-navigation";
@@ -20,6 +20,7 @@ const ROOT_ROUTES = new Set([
   "/app/inspiracoes",
   "/app/presenca-mesas",
   "/app/cotacoes",
+  "/app/perfil",
 ]);
 
 const PAGE_TITLES: Record<string, string> = {
@@ -39,6 +40,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/presenca-mesas": "Presença",
   "/app/presenca-mesas/mesas": "Mesas",
   "/app/cotacoes": "Cotações",
+  "/app/perfil": "Perfil",
 };
 
 function getPageTitle(pathname: string): string {
@@ -94,15 +96,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Heart className="h-[18px] w-[18px] text-[#D96C8A]" strokeWidth={2.2} fill="currentColor" />
                   <span className="font-serif text-[22px] leading-none text-[#4B2E2B]">casarei</span>
                 </Link>
-                <Link
-                  href="/app/sofia"
-                  className="relative grid h-9 w-9 place-items-center rounded-full bg-white ring-1 ring-[#EDE5E0]"
-                  style={{ boxShadow: "0 2px 10px rgba(75,46,43,0.10)" }}
-                  aria-label="Sofia"
-                >
-                  <Sparkles className="h-[17px] w-[17px] text-[#D96C8A]" strokeWidth={1.8} />
-                  <span className="absolute right-[9px] top-[9px] h-[7px] w-[7px] rounded-full bg-[#D96C8A] ring-[1.5px] ring-white" />
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/app/sofia"
+                    className="relative grid h-9 w-9 place-items-center rounded-full bg-white ring-1 ring-[#EDE5E0]"
+                    style={{ boxShadow: "0 2px 10px rgba(75,46,43,0.10)" }}
+                    aria-label="Sofia"
+                  >
+                    <Sparkles className="h-[17px] w-[17px] text-[#D96C8A]" strokeWidth={1.8} />
+                    <span className="absolute right-[9px] top-[9px] h-[7px] w-[7px] rounded-full bg-[#D96C8A] ring-[1.5px] ring-white" />
+                  </Link>
+                  <Link
+                    href="/app/perfil"
+                    className="grid h-9 w-9 place-items-center rounded-full bg-white ring-1 ring-[#EDE5E0]"
+                    style={{ boxShadow: "0 2px 10px rgba(75,46,43,0.10)" }}
+                    aria-label="Perfil"
+                  >
+                    <UserCircle className="h-[18px] w-[18px] text-[#8A716D]" strokeWidth={1.8} />
+                  </Link>
+                </div>
               </>
             ) : (
               <>
