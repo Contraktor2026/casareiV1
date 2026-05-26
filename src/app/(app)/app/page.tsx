@@ -118,8 +118,15 @@ export default function DashboardPage() {
   const partnerName = onboarding?.partnerName || null;
   const coupleNames = [brideName, partnerName].filter(Boolean).join(" & ") || null;
   function saveDate() {
-    if (!dateInput || !onboarding) return;
-    const updated = { ...onboarding, weddingDate: dateInput };
+    if (!dateInput) return;
+    const base: OnboardingData = onboarding ?? {
+      fullName: "", phone: "", email: "", city: "", state: "",
+      styles: [], brideName: "", partnerName: "", weddingDate: "",
+      weddingDateMode: "exact", guestRange: "", guestCount: 0,
+      weddingFormat: "", ceremonyType: "", partySize: "",
+      vendorTypes: [], priorities: [], plannedBudget: "",
+    };
+    const updated = { ...base, weddingDate: dateInput };
     saveOnboardingData(updated);
     setOnboarding(updated);
     setEditingDate(false);
