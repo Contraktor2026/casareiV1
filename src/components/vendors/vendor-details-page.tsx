@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Circle,
   Clock3,
+  Download,
   FileText,
   FolderOpen,
   Heart,
@@ -20,11 +21,13 @@ import {
   Music,
   Package,
   Palette,
+  Pencil,
   Phone,
   Plus,
   Scissors,
   StickyNote,
   Store,
+  Trash2,
   Upload,
   Utensils,
   UserRound,
@@ -67,6 +70,23 @@ function CategoryMark({ category }: { category: string }) {
   return <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-[#F8F4F1] text-[#8A716D]"><Store className="h-8 w-8" /></span>;
 }
 
+function VendorAvatar({ category, instagram }: { category: string; instagram: string }) {
+  const [imgError, setImgError] = useState(false);
+  const handle = instagram.replace("@", "").trim();
+
+  if (handle && !imgError) {
+    return (
+      <img
+        src={`https://unavatar.io/instagram/${handle}`}
+        alt={handle}
+        className="h-20 w-20 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-[#EEE6E1]"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return <CategoryMark category={category} />;
+}
+
 export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null; vendorId: string }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +99,10 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
   const [payments, setPayments] = useState<VendorPayment[]>((vendor ?? createEmptyVendor(vendorId)).payments);
   const [deliveries, setDeliveries] = useState<VendorDelivery[]>((vendor ?? createEmptyVendor(vendorId)).deliveries);
   const [files, setFiles] = useState<FileItem[]>(initialFiles(vendor ?? createEmptyVendor(vendorId)));
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [view]);
 
   useEffect(() => {
     const stored = getStoredVendors().find((item) => item.id === vendorId) ?? null;
@@ -174,13 +198,27 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
     setSavedMessage("Pagamento marcado como pago.");
   }
 
-  function addDelivery(title: string) {
+  function deletePayment(paymentId: string) {
+    const next = payments.filter((p) => p.id !== paymentId);
+    setPayments(next);
+    update("paidValue", String(next.filter((p) => p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
+    setSavedMessage("Pagamento removido.");
+  }
+
+  function editPayment(paymentId: string, amount: number, dueDate: string) {
+    const next = payments.map((p) => p.id === paymentId ? { ...p, amount, dueDate } : p);
+    setPayments(next);
+    update("paidValue", String(next.filter((p) => p.status === "pago").reduce((sum, p) => sum + p.amount, 0)));
+    setSavedMessage("Pagamento atualizado.");
+  }
+
+  function addDelivery(title: string, dueDate?: string) {
     setDeliveries((current) => [
       {
         id: `${currentVendor.id}-delivery-${Date.now()}`,
         title: title.trim(),
         status: "pendente",
-        dueDate: "A definir",
+        dueDate: dueDate || "A definir",
         note: "Adicionada pela noiva.",
         responsible: draft.responsible || draft.name
       },
@@ -230,6 +268,8 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
       onBack={() => setView("main")}
       onUpdate={update}
       onMarkPaid={markPaymentPaid}
+      onDelete={deletePayment}
+      onEdit={editPayment}
       onAddPayment={() => setShowPaymentModal(true)}
       savedMessage={savedMessage}
       onSave={() => persist()}
@@ -240,6 +280,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
   if (view === "contrato") {
     return <ContratoView
       draft={draft}
+      vendorId={currentVendor.id}
       onBack={() => setView("main")}
       onUpdate={update}
       onSave={() => persist()}
@@ -290,7 +331,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
           </button>
 
           <div className="flex items-start gap-4">
-            <CategoryMark category={draft.category} />
+            <VendorAvatar category={draft.category} instagram={draft.instagram} />
             <div className="min-w-0 flex-1 pt-1">
               <input
                 value={draft.name}
@@ -473,23 +514,46 @@ function TasksView({
   doneDeliveries: VendorDelivery[];
   onBack: () => void;
   onFinish: (id: string) => void;
-  onAdd: (title: string) => void;
+  onAdd: (title: string, dueDate?: string) => void;
 }) {
   const [tab, setTab] = useState<"pendentes" | "concluidas">("pendentes");
-  const [showNewTask, setShowNewTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDate, setNewTaskDate] = useState("");
 
   function submitTask() {
     if (!newTaskTitle.trim()) return;
-    onAdd(newTaskTitle);
+    onAdd(newTaskTitle, newTaskDate);
     setNewTaskTitle("");
-    setShowNewTask(false);
+    setNewTaskDate("");
   }
 
   return (
-    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
+    <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-6 md:-mx-8 lg:-mx-11">
       <SubHeader title="Tarefas" onBack={onBack} />
       <div className="px-4 pt-4 md:px-8 lg:px-11">
+
+        <div className="mb-4 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Nova tarefa</p>
+          <input
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submitTask(); }}
+            placeholder="O que precisa ser feito?"
+            className="w-full bg-transparent text-sm font-semibold text-[#4B2E2B] outline-none placeholder:text-[#C0B0AC]"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="date"
+              value={newTaskDate}
+              onChange={(e) => setNewTaskDate(e.target.value)}
+              className="h-9 flex-1 rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-xs text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
+            />
+            <Button type="button" onClick={submitTask} disabled={!newTaskTitle.trim()} className="h-9 rounded-xl bg-[#D96C8A] px-4 text-sm hover:bg-[#C85D7B] disabled:opacity-40">
+              <Plus className="h-4 w-4" />Adicionar
+            </Button>
+          </div>
+        </div>
+
         <div className="mb-4 flex gap-2">
           <button
             type="button"
@@ -553,29 +617,6 @@ function TasksView({
           </div>
         )}
 
-        {showNewTask && (
-          <div className="mt-4 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-            <input
-              autoFocus
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") submitTask(); }}
-              placeholder="Qual tarefa precisa ser feita?"
-              className="w-full bg-transparent text-sm font-semibold text-[#4B2E2B] outline-none placeholder:text-[#C0B0AC]"
-            />
-            <div className="mt-3 flex gap-2">
-              <Button type="button" onClick={submitTask} className="h-9 rounded-xl bg-[#D96C8A] px-4 text-sm hover:bg-[#C85D7B]">Adicionar</Button>
-              <Button type="button" variant="outline" onClick={() => setShowNewTask(false)} className="h-9 rounded-xl px-4 text-sm">Cancelar</Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={() => setShowNewTask(true)} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">
-          <Plus className="h-4 w-4" />
-          Nova tarefa
-        </Button>
       </div>
     </div>
   );
@@ -590,6 +631,8 @@ function FinanceView({
   onBack,
   onUpdate,
   onMarkPaid,
+  onDelete,
+  onEdit,
   onAddPayment,
   savedMessage,
   onSave,
@@ -603,11 +646,29 @@ function FinanceView({
   onBack: () => void;
   onUpdate: <K extends keyof ReturnType<typeof draftFromVendor>>(field: K, value: ReturnType<typeof draftFromVendor>[K]) => void;
   onMarkPaid: (id: string) => void;
+  onDelete: (id: string) => void;
+  onEdit: (id: string, amount: number, dueDate: string) => void;
   onAddPayment: () => void;
   savedMessage: string;
   onSave: () => void;
   modal: React.ReactNode;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editDate, setEditDate] = useState("");
+
+  function startEdit(payment: VendorPayment) {
+    setEditingId(payment.id);
+    setEditAmount(new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(payment.amount));
+    setEditDate(payment.dueDate);
+  }
+
+  function saveEdit(id: string) {
+    const amount = Number(editAmount.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, "")) || 0;
+    onEdit(id, amount, editDate);
+    setEditingId(null);
+  }
+
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
       <SubHeader title="Financeiro" onBack={onBack} />
@@ -619,31 +680,83 @@ function FinanceView({
             <MetricTile label="Pendente" value={money(pendingValue)} warn />
           </div>
           <label className="mt-3 block text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">
-            Valor total
+            Valor total contratado
             <input
               value={draft.totalValue}
               onChange={(e) => onUpdate("totalValue", e.target.value)}
               onBlur={onSave}
+              placeholder="0,00"
+              inputMode="decimal"
               className="mt-1 h-11 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-4 text-sm font-semibold text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
             />
           </label>
         </div>
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
         <div className="space-y-2">
+          {payments.length === 0 && (
+            <p className="rounded-2xl bg-[#FFFDFC] p-5 text-sm text-[#8A716D]">Nenhum lançamento ainda. Adicione o primeiro pagamento.</p>
+          )}
           {payments.map((payment) => (
-            <article key={payment.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#4B2E2B]">{payment.name}</p>
-                <p className="mt-0.5 text-xs text-[#8A716D]">{payment.dueDate}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-serif text-lg text-[#4B2E2B]">{money(payment.amount)}</p>
-                {payment.status === "pago" ? (
-                  <span className="mt-1 inline-flex rounded-full bg-[#EAF3DE] px-2 py-0.5 text-xs font-bold text-[#27500A]">Pago</span>
-                ) : (
-                  <button type="button" onClick={() => onMarkPaid(payment.id)} className="mt-1 text-xs font-bold text-[#5F7752]">Marcar como pago</button>
-                )}
-              </div>
+            <article key={payment.id} className="overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+              {editingId === payment.id ? (
+                <div className="p-4 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">{payment.name}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="text-xs font-medium text-[#4B2E2B]">
+                      Valor
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm font-semibold text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
+                      />
+                    </label>
+                    <label className="text-xs font-medium text-[#4B2E2B]">
+                      Vencimento
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" onClick={() => saveEdit(payment.id)} className="h-9 rounded-xl bg-[#D96C8A] px-4 text-sm hover:bg-[#C85D7B]">Salvar</Button>
+                    <Button type="button" variant="outline" onClick={() => setEditingId(null)} className="h-9 rounded-xl px-4 text-sm">Cancelar</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[#4B2E2B]">{payment.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8A716D]">
+                      <Calendar className="h-3 w-3" />
+                      {payment.dueDate ? new Date(`${payment.dueDate}T12:00:00`).toLocaleDateString("pt-BR") : "Data não definida"}
+                    </p>
+                    {payment.status !== "pago" && (
+                      <button type="button" onClick={() => onMarkPaid(payment.id)} className="mt-1 text-xs font-bold text-[#5F7752]">
+                        Marcar como pago
+                      </button>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="font-serif text-lg text-[#4B2E2B]">{money(payment.amount)}</p>
+                    <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${payment.status === "pago" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#FBEEE8] text-[#B96F52]"}`}>
+                      {payment.status === "pago" ? "Pago" : "Pendente"}
+                    </span>
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    <button type="button" onClick={() => startEdit(payment)} className="grid h-8 w-8 place-items-center rounded-full text-[#8A716D] hover:bg-[#F8F4F1]" aria-label="Editar">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button type="button" onClick={() => onDelete(payment.id)} className="grid h-8 w-8 place-items-center rounded-full text-[#D28B6E] hover:bg-[#FBEEE8]" aria-label="Excluir">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </article>
           ))}
         </div>
@@ -660,17 +773,47 @@ function FinanceView({
 
 function ContratoView({
   draft,
+  vendorId,
   onBack,
   onUpdate,
   onSave,
   savedMessage
 }: {
   draft: ReturnType<typeof draftFromVendor>;
+  vendorId: string;
   onBack: () => void;
   onUpdate: <K extends keyof ReturnType<typeof draftFromVendor>>(field: K, value: ReturnType<typeof draftFromVendor>[K]) => void;
   onSave: () => void;
   savedMessage: string;
 }) {
+  const contractFileRef = useRef<HTMLInputElement>(null);
+  const [contractFileName, setContractFileName] = useState<string>(
+    () => (typeof window !== "undefined" ? localStorage.getItem(`casarei_contract_name_${vendorId}`) ?? "" : "")
+  );
+
+  function handleContractFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      localStorage.setItem(`casarei_contract_${vendorId}`, base64);
+      localStorage.setItem(`casarei_contract_name_${vendorId}`, file.name);
+      setContractFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function downloadContract() {
+    const base64 = localStorage.getItem(`casarei_contract_${vendorId}`);
+    if (!base64) return;
+    const a = document.createElement("a");
+    a.href = base64;
+    a.download = contractFileName || "contrato";
+    a.click();
+  }
+
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
       <SubHeader title="Contrato" onBack={onBack} />
@@ -698,6 +841,29 @@ function ContratoView({
             className="mt-2 min-h-[120px] w-full resize-none bg-transparent text-sm text-[#4B2E2B] outline-none"
           />
         </label>
+        <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Arquivo do contrato</span>
+          {contractFileName ? (
+            <div className="mt-3 flex items-center gap-3 rounded-xl bg-[#F8F4F1] p-3">
+              <FileText className="h-5 w-5 shrink-0 text-[#5F7752]" />
+              <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[#4B2E2B]">{contractFileName}</p>
+              <button type="button" onClick={downloadContract} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#EEF3EA] text-[#5F7752]" aria-label="Baixar">
+                <Download className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-[#8A716D]">Nenhum arquivo enviado.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => contractFileRef.current?.click()}
+            className="mt-3 flex items-center gap-2 rounded-xl bg-[#F8F4F1] px-4 py-2.5 text-sm font-semibold text-[#4B2E2B] hover:bg-[#EEE6E1]"
+          >
+            <Upload className="h-4 w-4 text-[#8A716D]" />
+            {contractFileName ? "Trocar arquivo" : "Enviar arquivo"}
+          </button>
+          <input ref={contractFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={handleContractFile} />
+        </div>
       </div>
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
         <Button type="button" onClick={onSave} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">Salvar contrato</Button>
@@ -808,15 +974,32 @@ function ObservacoesView({
   onSave: () => void;
   savedMessage: string;
 }) {
+  const [igImgError, setIgImgError] = useState(false);
+  const igHandle = draft.instagram.replace("@", "").trim();
+
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
       <SubHeader title="Observações" onBack={onBack} />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
         {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
+        {igHandle && !igImgError && (
+          <div className="flex items-center gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+            <img
+              src={`https://unavatar.io/instagram/${igHandle}`}
+              alt={igHandle}
+              className="h-14 w-14 rounded-full object-cover ring-2 ring-[#EEE6E1]"
+              onError={() => setIgImgError(true)}
+            />
+            <div>
+              <p className="text-sm font-bold text-[#4B2E2B]">@{igHandle}</p>
+              <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noreferrer" className="mt-0.5 text-xs font-semibold text-[#D96C8A]">Ver perfil →</a>
+            </div>
+          </div>
+        )}
         <div className="grid gap-3">
           <EditableField label="Responsável" value={draft.responsible} onChange={(v) => onUpdate("responsible", v)} />
           <EditableField label="WhatsApp" value={draft.whatsapp} onChange={(v) => onUpdate("whatsapp", v)} />
-          <EditableField label="Instagram" value={draft.instagram} onChange={(v) => onUpdate("instagram", v)} />
+          <EditableField label="Instagram" value={draft.instagram} onChange={(v) => { onUpdate("instagram", v); setIgImgError(false); }} />
           <EditableField label="Email" value={draft.email} onChange={(v) => onUpdate("email", v)} />
         </div>
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
