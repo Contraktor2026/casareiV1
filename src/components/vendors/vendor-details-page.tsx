@@ -347,7 +347,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
 
   return (
     <>
-      <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
+      <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-10 md:-mx-8 lg:-mx-11">
         <div className="px-4 pt-5 md:px-8 lg:px-11">
           <button type="button" onClick={() => router.back()} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[#8A716D]">
             <ArrowLeft className="h-4 w-4" />
@@ -472,22 +472,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
         </div>
       </div>
 
-      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
-        <Button type="button" onClick={() => { setPaymentModalKind("contract"); setShowPaymentModal(true); }} className="h-13 w-full rounded-xl bg-[#D96C8A] py-3.5 text-base font-semibold hover:bg-[#C85D7B]">
-          <Wallet className="h-4 w-4" />
-          Registrar pagamento
-        </Button>
-      </div>
-
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFiles} />
-      <VendorPaymentModal
-        open={showPaymentModal}
-        supplier={draft.name}
-        title={paymentModalKind === "extra" ? "Adicionar despesa extra" : "Registrar pagamento"}
-        mode={paymentModalKind}
-        onClose={() => setShowPaymentModal(false)}
-        onSave={addPayment}
-      />
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 md:items-center">
