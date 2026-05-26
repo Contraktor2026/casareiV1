@@ -58,11 +58,9 @@ export function VendorPaymentModal({ open, supplier, title = "Registrar pagament
       setError("Preencha valor e data de ao menos uma parcela.");
       return;
     }
-
     validRows.forEach((r) => {
       onSave({ amount: parseCurrencyInput(r.value), dueDate: r.date, method, status, description: description.trim(), kind: mode });
     });
-
     setRows([{ value: "", date: "" }]);
     setInstallmentCount(1);
     setMethod("Pix");
@@ -74,10 +72,15 @@ export function VendorPaymentModal({ open, supplier, title = "Registrar pagament
 
   const total = rows.reduce((sum, r) => sum + parseCurrencyInput(r.value), 0);
 
+  const statusOptions: { value: "pendente" | "proximo" | "pago"; label: string }[] = mode === "extra"
+    ? [{ value: "pendente", label: "Pendente" }, { value: "pago", label: "Pago" }]
+    : [{ value: "pendente", label: "Pendente" }, { value: "proximo", label: "Próximo" }, { value: "pago", label: "Pago" }];
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 md:place-items-center md:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/25 md:items-center md:p-6">
       <section className="flex max-h-[92vh] w-full flex-col rounded-t-[32px] bg-[#FFFDFC] shadow-[0_24px_90px_rgba(75,46,43,0.24)] md:max-w-lg md:rounded-[32px]">
 
+        {/* Header */}
         <div className="shrink-0 flex items-start justify-between gap-4 border-b border-[#EEE6E1] px-5 pb-4 pt-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8A716D]">{title}</p>
@@ -93,72 +96,76 @@ export function VendorPaymentModal({ open, supplier, title = "Registrar pagament
           </div>
         </div>
 
+        {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          <div className="space-y-4">
-            {mode === "extra" ? (
-              <label className="block text-sm font-medium text-[#4B2E2B]">
-                Descrição da despesa
+          <div className="space-y-5">
+
+            {/* Descrição — apenas despesa extra */}
+            {mode === "extra" && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-[#4B2E2B]">Descrição</p>
                 <input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Taxa de deslocamento, hora extra, degustação"
-                  className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
+                  placeholder="Ex: Taxa de deslocamento, hora extra…"
+                  className="h-12 w-full rounded-2xl border border-[#EEE6E1] bg-[#F8F4F1] px-4 text-sm outline-none focus:border-[#D96C8A]"
                 />
-              </label>
-            ) : null}
+              </div>
+            )}
 
-            <label className="block text-sm font-medium text-[#4B2E2B]">
-              Forma de pagamento
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
-              >
-                {paymentMethods.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block text-sm font-medium text-[#4B2E2B]">
-              Status
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as typeof status)}
-                className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
-              >
-                <option value="pendente">Pendente</option>
-                <option value="proximo">Próximo</option>
-                <option value="pago">Pago</option>
-              </select>
-            </label>
-
+            {/* Forma de pagamento */}
             <div>
-              <p className="text-sm font-medium text-[#4B2E2B]">Número de parcelas</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {installmentOptions.map((n) => (
+              <p className="mb-2 text-sm font-semibold text-[#4B2E2B]">Forma de pagamento</p>
+              <div className="flex flex-wrap gap-2">
+                {paymentMethods.map((m) => (
                   <button
-                    key={n}
+                    key={m}
                     type="button"
-                    onClick={() => changeInstallmentCount(n)}
-                    className={`h-10 min-w-[3rem] rounded-xl px-3 text-sm font-bold transition ${
-                      installmentCount === n
-                        ? "bg-[#D96C8A] text-white shadow-sm"
-                        : "bg-[#F8F4F1] text-[#4B2E2B] hover:bg-[#F3C7D2]"
+                    onClick={() => setMethod(m)}
+                    className={`rounded-full px-3 py-2 text-xs font-bold transition ${
+                      method === m
+                        ? "bg-[#4B2E2B] text-white"
+                        : "bg-[#F8F4F1] text-[#4B2E2B] hover:bg-[#EEE6E1]"
                     }`}
                   >
-                    {n}x
+                    {m}
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Parcelas — apenas pagamento de contrato */}
+            {mode === "contract" && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-[#4B2E2B]">Parcelas</p>
+                <div className="flex flex-wrap gap-2">
+                  {installmentOptions.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => changeInstallmentCount(n)}
+                      className={`h-9 min-w-[2.75rem] rounded-xl px-3 text-sm font-bold transition ${
+                        installmentCount === n
+                          ? "bg-[#D96C8A] text-white shadow-sm"
+                          : "bg-[#F8F4F1] text-[#4B2E2B] hover:bg-[#F3C7D2]"
+                      }`}
+                    >
+                      {n}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Valores e datas */}
             <div className="space-y-3">
               {rows.map((row, i) => (
                 <div key={i} className="rounded-2xl border border-[#EEE6E1] bg-[#F8F4F1] p-4">
-                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">
-                    {installmentCount === 1 ? "Valor e vencimento" : `Parcela ${i + 1} de ${installmentCount}`}
-                  </p>
+                  {mode === "contract" && installmentCount > 1 && (
+                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">
+                      Parcela {i + 1} de {installmentCount}
+                    </p>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <label className="text-xs font-medium text-[#4B2E2B]">
                       Valor
@@ -172,7 +179,7 @@ export function VendorPaymentModal({ open, supplier, title = "Registrar pagament
                       />
                     </label>
                     <label className="text-xs font-medium text-[#4B2E2B]">
-                      Vencimento
+                      {mode === "extra" ? "Data" : "Vencimento"}
                       <input
                         type="date"
                         value={row.date}
@@ -185,20 +192,45 @@ export function VendorPaymentModal({ open, supplier, title = "Registrar pagament
               ))}
             </div>
 
+            {/* Total */}
             {total > 0 && (
-              <div className="rounded-2xl bg-[#F7EEDC] px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Total</p>
-                  <p className="text-base font-bold text-[#7B5C2E]">
-                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}
-                  </p>
-                </div>
+              <div className="flex items-center justify-between rounded-2xl bg-[#F7EEDC] px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Total</p>
+                <p className="text-base font-bold text-[#7B5C2E]">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}
+                </p>
               </div>
             )}
+
+            {/* Status */}
+            <div>
+              <p className="mb-2 text-sm font-semibold text-[#4B2E2B]">Status</p>
+              <div className="flex gap-2">
+                {statusOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setStatus(opt.value)}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition ${
+                      status === opt.value
+                        ? opt.value === "pago"
+                          ? "bg-[#EEF3EA] text-[#5F7752]"
+                          : opt.value === "proximo"
+                          ? "bg-[#F8E7EC] text-[#D96C8A]"
+                          : "bg-[#FBEEE8] text-[#B96F52]"
+                        : "bg-[#F8F4F1] text-[#8A716D] hover:bg-[#EEE6E1]"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {error && (
               <p className="rounded-2xl bg-[#FBEEE8] px-4 py-3 text-sm text-[#B96F52]">{error}</p>
             )}
+
           </div>
         </div>
       </section>
