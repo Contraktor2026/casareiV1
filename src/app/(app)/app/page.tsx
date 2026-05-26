@@ -285,88 +285,14 @@ export default function DashboardPage() {
   }
 
   const alert = useMemo(() => computeAlert(stats), [stats]);
-  const budgetPct = stats.budgetTotal > 0 ? Math.min(100, Math.round((stats.budgetCommitted / stats.budgetTotal) * 100)) : 0;
 
-  // Cards with live data
   const cards = [
-    {
-      title: "Orçamentos",
-      href: "/app/cotacoes",
-      icon: Scale,
-      bg: "#2A1A1F",
-      iconColor: "#F3A8C2",
-      dark: true,
-      stat: stats.proposalsCount > 0 ? String(stats.proposalsCount) : "—",
-      statLabel: stats.proposalsCount > 0
-        ? `proposta${stats.proposalsCount > 1 ? "s" : ""} para analisar`
-        : "Adicione suas cotações",
-      alert: false,
-      bar: null,
-    },
-    {
-      title: "Fornecedores",
-      href: "/app/fornecedores",
-      icon: Store,
-      bg: "#EEF3EA",
-      iconColor: "#5F7752",
-      dark: false,
-      stat: String(stats.vendorsClosed),
-      statLabel: `fechado${stats.vendorsClosed !== 1 ? "s" : ""} de ${stats.vendorsTotal}`,
-      alert: stats.vendorsPendingContract > 0,
-      bar: stats.vendorsTotal > 0 ? Math.round((stats.vendorsClosed / stats.vendorsTotal) * 100) : null,
-    },
-    {
-      title: "Convidados",
-      href: "/app/convidados",
-      icon: Users,
-      bg: "#EEF1F4",
-      iconColor: "#6E7F91",
-      dark: false,
-      stat: stats.guestsTotal > 0 ? String(stats.guestsConfirmed) : "—",
-      statLabel: stats.guestsTotal > 0
-        ? `confirmado${stats.guestsConfirmed !== 1 ? "s" : ""} de ${stats.guestsTotal}`
-        : "Adicione convidados",
-      alert: false,
-      bar: stats.guestsTotal > 0 ? Math.round((stats.guestsConfirmed / stats.guestsTotal) * 100) : null,
-    },
-    {
-      title: "Financeiro",
-      href: "/app/orcamento",
-      icon: Wallet,
-      bg: "#F8E7EC",
-      iconColor: "#D96C8A",
-      dark: false,
-      stat: stats.budgetCommitted > 0 ? formatBRL(stats.budgetCommitted) : "—",
-      statLabel: stats.budgetTotal > 0 ? `de ${formatBRL(stats.budgetTotal)}` : "orçamento não definido",
-      alert: stats.paymentsOverdue.length > 0,
-      bar: budgetPct > 0 ? budgetPct : null,
-    },
-    {
-      title: "Agenda",
-      href: "/app/cronograma",
-      icon: CheckSquare,
-      bg: "#FBEEE8",
-      iconColor: "#B96F52",
-      dark: false,
-      stat: String(stats.tasksPending),
-      statLabel: stats.tasksOverdue > 0
-        ? `pendentes · ${stats.tasksOverdue} atrasada${stats.tasksOverdue > 1 ? "s" : ""}`
-        : `pendente${stats.tasksPending !== 1 ? "s" : ""}`,
-      alert: stats.tasksOverdue > 0,
-      bar: null,
-    },
-    {
-      title: "Presença & Mesas",
-      href: "/app/presenca-mesas",
-      icon: ClipboardList,
-      bg: "#EDEAF7",
-      iconColor: "#7B68C8",
-      dark: false,
-      stat: stats.guestsTotal > 0 ? String(stats.guestsTotal) : "—",
-      statLabel: "convidados na lista",
-      alert: false,
-      bar: null,
-    },
+    { title: "Orçamentos", href: "/app/cotacoes", icon: Scale, bg: "#2A1A1F", iconColor: "#F3A8C2", dark: true, alert: false },
+    { title: "Fornecedores", href: "/app/fornecedores", icon: Store, bg: "#EEF3EA", iconColor: "#5F7752", dark: false, alert: stats.vendorsPendingContract > 0 },
+    { title: "Convidados", href: "/app/convidados", icon: Users, bg: "#EEF1F4", iconColor: "#6E7F91", dark: false, alert: false },
+    { title: "Financeiro", href: "/app/orcamento", icon: Wallet, bg: "#F8E7EC", iconColor: "#D96C8A", dark: false, alert: stats.paymentsOverdue.length > 0 },
+    { title: "Agenda", href: "/app/cronograma", icon: CheckSquare, bg: "#FBEEE8", iconColor: "#B96F52", dark: false, alert: stats.tasksOverdue > 0 },
+    { title: "Presença & Mesas", href: "/app/presenca-mesas", icon: ClipboardList, bg: "#EDEAF7", iconColor: "#7B68C8", dark: false, alert: false },
   ];
 
   return (
@@ -570,50 +496,22 @@ export default function DashboardPage() {
                 className="relative flex flex-col rounded-[22px] p-4 transition active:scale-[0.97]"
                 style={{
                   background: card.dark ? card.bg : "#fff",
-                  boxShadow: card.dark
-                    ? "0 8px 28px rgba(42,26,31,0.30)"
-                    : "0 4px 18px rgba(75,46,43,0.07)",
+                  boxShadow: card.dark ? "0 8px 28px rgba(42,26,31,0.30)" : "0 4px 18px rgba(75,46,43,0.07)",
                   outline: card.dark ? "none" : "1px solid #EEE6E1",
                 }}
               >
-                {/* Alert dot */}
                 {card.alert && (
                   <span className="absolute right-3.5 top-3.5 h-2.5 w-2.5 rounded-full bg-[#D94A4A] ring-2 ring-white" />
                 )}
-
-                {/* Icon */}
                 <span
                   className="grid h-11 w-11 place-items-center rounded-[14px]"
                   style={{ background: card.dark ? "rgba(255,255,255,0.12)" : card.bg }}
                 >
                   <Icon className="h-5 w-5" style={{ color: card.iconColor }} strokeWidth={1.8} />
                 </span>
-
-                {/* Title */}
                 <p className={`mt-3 font-serif text-base leading-snug ${card.dark ? "text-white" : "text-[#4B2E2B]"}`}>
                   {card.title}
                 </p>
-
-                {/* Live stat */}
-                <p className={`mt-1.5 font-serif text-2xl font-semibold leading-none ${card.dark ? "text-white" : "text-[#4B2E2B]"}`}>
-                  {card.stat}
-                </p>
-                <p className={`mt-1 text-[11px] leading-snug ${card.dark ? "text-white/55" : "text-[#8A716D]"}`}>
-                  {card.statLabel}
-                </p>
-
-                {/* Progress bar */}
-                {card.bar !== null && (
-                  <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-black/8">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${card.bar}%`,
-                        background: card.dark ? "rgba(243,168,194,0.8)" : card.iconColor,
-                      }}
-                    />
-                  </div>
-                )}
               </Link>
             );
           })}
