@@ -60,7 +60,7 @@ export function VendorsPage() {
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [proposals, setProposals] = useState<QuoteProposal[]>([]);
-  const [activeTab, setActiveTab] = useState<VendorsTab>("Todos");
+  const [activeTab, setActiveTab] = useState<VendorsTab>("Já fechados");
   const [pendingCategories, setPendingCategories] = useState<string[]>([]);
   const [pendingDetail, setPendingDetail] = useState<string | null>(null);
   const [newPendingCategory, setNewPendingCategory] = useState("");
@@ -743,10 +743,7 @@ function TabBar({ active, onChange }: { active: VendorsTab; onChange: (tab: Vend
 
 function ClosedTab({
   vendors,
-  attentionVendors,
-  pendingCount,
-  onInvite,
-  onGoPending
+  onInvite
 }: {
   vendors: Vendor[];
   attentionVendors: Vendor[];
@@ -756,11 +753,10 @@ function ClosedTab({
 }) {
   return (
     <section>
-      <HeroCard title="O que precisa de atenção vem primeiro." text="Contratos, pagamentos e fornecedores sem resposta aparecem antes da lista completa." />
-      <AttentionBlock vendors={attentionVendors} pendingCount={pendingCount} onGoPending={onGoPending} />
-      <h2 className="mt-5 text-base font-bold text-[#4B2E2B]">Fornecedores fechados</h2>
-      <p className="text-xs text-[#8A716D]">{vendors.length} contratados</p>
+      <h2 className="text-base font-bold text-[#4B2E2B]">Fornecedores fechados</h2>
+      <p className="text-xs text-[#8A716D]">{vendors.length + 1} contratados</p>
       <div className="mt-3 space-y-3">
+        <CasareiAppCard />
         {vendors.map((vendor) => (
           <VendorRow key={vendor.id} vendor={vendor} />
         ))}
@@ -770,6 +766,31 @@ function ClosedTab({
         Convidar fornecedor
       </Button>
     </section>
+  );
+}
+
+function CasareiAppCard() {
+  return (
+    <article className="rounded-2xl bg-[#FFFDFC] p-3 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+      <div className="flex items-center gap-3">
+        <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#F8E7EC] text-[#D96C8A]">
+          <Heart className="h-6 w-6" fill="currentColor" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold text-[#4B2E2B]">casarei</p>
+          <p className="text-xs text-[#8A716D]">App de planejamento</p>
+          <span className="mt-1 inline-flex rounded-full bg-[#EEF3EA] px-2 py-1 text-[10px] font-semibold text-[#5F7752]">
+            Ativo
+          </span>
+          <p className="mt-2 inline-flex rounded-full bg-[#F8F4F1] px-2 py-1 text-[10px] font-semibold text-[#4B2E2B]">
+            Plano Gratuito
+          </p>
+          <p className="mt-2 inline-flex rounded-full bg-[#F7EEDC] px-2 py-1 text-xs font-bold text-[#7B5C2E]">
+            R$ 0 / mês
+          </p>
+        </div>
+      </div>
+    </article>
   );
 }
 
