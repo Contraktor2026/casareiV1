@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Clock3, Receipt, WalletCards } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Clock3, Receipt } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { getVendorFinancePayments, subscribeVendorFinancePayments, updateVendorFinancePaymentStatus } from "@/lib/client/vendor-finance-sync";
-import { budgetPayments } from "@/lib/mock/budget";
 import type { BudgetPayment } from "@/types/budget";
-
-const today = new Date("2026-05-23T12:00:00");
 
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(value);
@@ -18,7 +16,7 @@ function money(value: number) {
 
 function daysBetween(date: string) {
   const due = new Date(`${date}T12:00:00`);
-  return Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  return Math.ceil((due.getTime() - Date.now()) / 86400000);
 }
 
 function sortByDueDate(payments: BudgetPayment[]) {
@@ -26,10 +24,13 @@ function sortByDueDate(payments: BudgetPayment[]) {
 }
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab");
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const [vendorPayments, setVendorPayments] = useState<BudgetPayment[]>([]);
   const [paidOverrides, setPaidOverrides] = useState<Record<string, true>>({});
   const allPayments = useMemo(
-    () => sortByDueDate([...vendorPayments, ...budgetPayments].map((payment) => (paidOverrides[payment.id] ? { ...payment, status: "pago" } : payment))),
+    () => sortByDueDate([...vendorPayments].map((payment) => (paidOverrides[payment.id] ? { ...payment, status: "pago" } : payment))),
     [paidOverrides, vendorPayments]
   );
 
@@ -37,6 +38,13 @@ export default function Page() {
     setVendorPayments(getVendorFinancePayments());
     return subscribeVendorFinancePayments(() => setVendorPayments(getVendorFinancePayments()));
   }, []);
+
+  useEffect(() => {
+    if (!tab) return;
+    const key = tab === "atrasado" ? "atrasado" : tab === "pago" ? "pago" : "pendente";
+    const el = sectionRefs.current[key];
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+  }, [tab]);
 
   const paid = allPayments.filter((payment) => payment.status === "pago");
   const open = allPayments.filter((payment) => payment.status !== "pago");
@@ -82,20 +90,24 @@ export default function Page() {
         </section>
 
         <section className="grid gap-5 xl:grid-cols-2">
-          <PaymentGroup
-            title="Atrasados"
-            description={overdue.length ? "Resolva estes primeiro." : "Nada atrasado agora."}
-            tone="danger"
-            payments={overdue}
-            onMarkPaid={markAsPaid}
-          />
-          <PaymentGroup
-            title="Vencem em até 7 dias"
-            description={thisWeek.length ? "Pagamentos que precisam de atenção nesta semana." : "Nenhum vencimento nesta semana."}
-            tone="warn"
-            payments={thisWeek}
-            onMarkPaid={markAsPaid}
-          />
+          <div ref={(el) => { sectionRefs.current["atrasado"] = el; }}>
+            <PaymentGroup
+              title="Atrasados"
+              description={overdue.length ? "Resolva estes primeiro." : "Nada atrasado agora."}
+              tone="danger"
+              payments={overdue}
+              onMarkPaid={markAsPaid}
+            />
+          </div>
+          <div ref={(el) => { sectionRefs.current["pendente"] = el; }}>
+            <PaymentGroup
+              title="Vencem em até 7 dias"
+              description={thisWeek.length ? "Pagamentos que precisam de atenção nesta semana." : "Nenhum vencimento nesta semana."}
+              tone="warn"
+              payments={thisWeek}
+              onMarkPaid={markAsPaid}
+            />
+          </div>
           <PaymentGroup
             title="Próximos pagamentos"
             description="O que vem depois da semana atual."
@@ -103,13 +115,15 @@ export default function Page() {
             payments={upcoming}
             onMarkPaid={markAsPaid}
           />
-          <PaymentGroup
-            title="Pagos"
-            description="Histórico do que já foi quitado."
-            tone="ok"
-            payments={paid.slice().reverse()}
-            onMarkPaid={markAsPaid}
-          />
+          <div ref={(el) => { sectionRefs.current["pago"] = el; }}>
+            <PaymentGroup
+              title="Pagos"
+              description="Histórico do que já foi quitado."
+              tone="ok"
+              payments={paid.slice().reverse()}
+              onMarkPaid={markAsPaid}
+            />
+          </div>
         </section>
       </main>
     </div>

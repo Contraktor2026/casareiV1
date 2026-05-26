@@ -229,9 +229,9 @@ export function BudgetPage() {
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             <MetricCard label="Disponível" value={plannedAmount > 0 ? money(available) : "—"} tone="ok" icon={<Wallet />} />
-            <MetricCard label="A pagar" value={money(payable)} tone="warn" icon={<Clock3 />} />
-            <MetricCard label="Pago" value={money(paid)} tone="ok" icon={<CheckCircle2 />} />
-            <MetricCard label="Atrasado" value={money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} tone="danger" icon={<AlertTriangle />} />
+            <MetricCard label="A pagar" value={money(payable)} tone="warn" icon={<Clock3 />} href="/app/orcamento/pagamentos?tab=pendente" />
+            <MetricCard label="Pago" value={money(paid)} tone="ok" icon={<CheckCircle2 />} href="/app/orcamento/pagamentos?tab=pago" />
+            <MetricCard label="Atrasado" value={money(overdue.reduce((sum, payment) => sum + payment.amount, 0))} tone="danger" icon={<AlertTriangle />} href="/app/orcamento/pagamentos?tab=atrasado" />
           </div>
         </section>
 
@@ -319,6 +319,24 @@ export function BudgetPage() {
           </span>
         </button>
 
+        {/* ── Próximos pagamentos ── */}
+        {allPayments.filter((p) => p.status !== "pago").length > 0 && (
+          <section className="rounded-[26px] bg-white p-5 shadow-[0_14px_36px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#993556]">Agenda financeira</p>
+                <h2 className="mt-0.5 font-serif text-2xl text-[#4B1528]">Próximos pagamentos</h2>
+              </div>
+              <Link href="/app/orcamento/pagamentos" className="text-xs font-bold text-[#D4537E]">Ver tudo</Link>
+            </div>
+            <div className="space-y-2">
+              {allPayments.filter((p) => p.status !== "pago").slice(0, 5).map((payment) => (
+                <DueRow key={payment.id} payment={payment} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {message ? <p className="rounded-2xl bg-[#EAF3DE] px-4 py-3 text-sm font-bold text-[#27500A]">{message}</p> : null}
 
         {/* ── Categorias ── */}
@@ -327,13 +345,6 @@ export function BudgetPage() {
             {categorySummaries.slice(0, 5).map((category) => (
               <CategoryRow key={category.id} category={category} onOpen={() => setSelectedCategory(category)} />
             ))}
-          </div>
-        </SimplePanel>
-
-        {/* ── Próximos pagamentos ── */}
-        <SimplePanel title="Próximos pagamentos" action={<Link href="/app/orcamento/pagamentos">Abrir agenda</Link>}>
-          <div className="space-y-2">
-            {allPayments.filter((payment) => payment.status !== "pago").slice(0, 4).map((payment) => <DueRow key={payment.id} payment={payment} />)}
           </div>
         </SimplePanel>
 
@@ -356,14 +367,18 @@ export function BudgetPage() {
   );
 }
 
-function MetricCard({ label, value, tone, icon }: { label: string; value: string; tone: "ok" | "warn" | "danger"; icon: ReactNode }) {
-  return (
-    <article className={`rounded-2xl p-4 ${toneBg(tone)}`}>
+function MetricCard({ label, value, tone, icon, href }: { label: string; value: string; tone: "ok" | "warn" | "danger"; icon: ReactNode; href?: string }) {
+  const cls = `rounded-2xl p-4 ${toneBg(tone)} ${href ? "transition active:scale-[0.97] cursor-pointer" : ""}`;
+  const body = (
+    <>
       <span className="[&>svg]:h-5 [&>svg]:w-5">{icon}</span>
       <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] opacity-75">{label}</p>
       <strong className="mt-1 block font-serif text-2xl">{value}</strong>
-    </article>
+      {href && <span className="mt-1.5 block text-[10px] font-bold opacity-50">ver detalhes →</span>}
+    </>
   );
+  if (href) return <Link href={href} className={cls}>{body}</Link>;
+  return <article className={cls}>{body}</article>;
 }
 
 
@@ -413,17 +428,29 @@ function CategoryRow({ category, onOpen }: { category: BudgetCategory; onOpen: (
 function DueRow({ payment, compact = false }: { payment: BudgetPayment; compact?: boolean }) {
   const days = daysBetween(payment.dueDate);
   const tone = payment.status === "atrasado" || days < 0 ? "danger" : days <= 7 ? "warn" : "ok";
+  const parsed = new Date(`${payment.dueDate}T12:00:00`);
+  const day = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(parsed);
+  const month = new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(parsed).replace(".", "").toUpperCase();
   return (
-    <article className={`flex items-center justify-between gap-3 rounded-2xl ${compact ? "bg-white" : "bg-[#FFF8F4]"} p-4`}>
-      <div className="min-w-0">
+    <Link
+      href="/app/orcamento/pagamentos"
+      className={`flex items-center gap-3 rounded-2xl ${compact ? "bg-[#FFF8F4]" : "bg-[#FFF8F4]"} p-3 transition active:scale-[0.98]`}
+    >
+      <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-center ${toneBg(tone)}`}>
+        <span>
+          <strong className="block text-base leading-none">{day}</strong>
+          <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.04em]">{month}</span>
+        </span>
+      </span>
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-[#2A1A1F]">{payment.supplier}</p>
-        <p className="mt-0.5 text-xs text-[#8A716D]">{payment.category} · {formatDisplayDate(payment.dueDate)}</p>
+        <p className="mt-0.5 text-xs text-[#8A716D]">{payment.category}</p>
       </div>
-      <div className="text-right">
+      <div className="shrink-0 text-right">
         <p className="text-sm font-bold text-[#2A1A1F]">{money(payment.amount)}</p>
         <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${badgeTone(tone)}`}>{dueText(days)}</span>
       </div>
-    </article>
+    </Link>
   );
 }
 
