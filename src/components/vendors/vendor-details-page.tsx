@@ -560,10 +560,22 @@ function TasksView({
 
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-6 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Tarefas" onBack={onBack} />
+      <SubHeader
+        title="Tarefas"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={submitTask} disabled={!newTaskTitle.trim()} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B] disabled:opacity-40">
+            Salvar
+          </Button>
+        }
+      />
       <div className="px-4 pt-4 md:px-8 lg:px-11">
 
         <div className="mb-4 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            <MetricTile label="Pendentes" value={String(pendingDeliveries.length)} warn />
+            <MetricTile label="Concluídas" value={String(doneDeliveries.length)} green />
+          </div>
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Nova tarefa</p>
           <input
             value={newTaskTitle}
@@ -705,7 +717,15 @@ function FinanceView({
 
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Financeiro" onBack={onBack} />
+      <SubHeader
+        title="Financeiro"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={onSave} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
+            Salvar
+          </Button>
+        }
+      />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
           <div className="grid grid-cols-3 gap-3">
@@ -722,7 +742,7 @@ function FinanceView({
             </div>
           ) : null}
           <label className="mt-3 block text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">
-            Valor total contratado
+            Editar valor contratado
             <input
               value={draft.totalValue}
               onChange={(e) => onUpdate("totalValue", e.target.value)}
@@ -891,8 +911,7 @@ function ContratoView({
             <option value="assinado">Assinado</option>
           </select>
         </label>
-        <ContractField label="Data de assinatura" value={draft.signedAt} onChange={(v) => onUpdate("signedAt", v)} placeholder="AAAA-MM-DD" />
-        <ContractField label="Link ou PDF" value={draft.contractLink} onChange={(v) => onUpdate("contractLink", v)} placeholder="https://..." />
+        <ContractField label="Data de assinatura" value={draft.signedAt} onChange={(v) => onUpdate("signedAt", v)} type="date" />
         <label className="block rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
           <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Observações do contrato</span>
           <textarea
@@ -929,11 +948,12 @@ function ContratoView({
   );
 }
 
-function ContractField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function ContractField({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <label className="block rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
       <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">{label}</span>
       <input
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -956,7 +976,15 @@ function ArquivosView({
 }) {
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader title="Arquivos" onBack={onBack} />
+      <SubHeader
+        title="Arquivos"
+        onBack={onBack}
+        action={
+          <Button type="button" onClick={() => fileInputRef.current?.click()} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
+            Upload
+          </Button>
+        }
+      />
       <div className="space-y-3 px-4 pt-4 md:px-8 lg:px-11">
         {files.length ? files.map((file) => (
           <article key={file.id} className="flex items-center gap-3 rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
@@ -969,7 +997,12 @@ function ArquivosView({
             </div>
           </article>
         )) : (
-          <p className="rounded-2xl bg-[#FFFDFC] p-5 text-sm text-[#8A716D]">Nenhum arquivo ainda. Inclua orçamento, contrato, comprovante ou referência.</p>
+          <div className="rounded-2xl bg-[#FFFDFC] p-5 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+            <p className="text-sm text-[#8A716D]">Nenhum arquivo ainda. Inclua orçamento, contrato, comprovante ou referência.</p>
+            <Button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 h-11 w-full rounded-xl bg-[#D96C8A] text-sm font-semibold hover:bg-[#C85D7B]">
+              <Upload className="h-4 w-4" />Fazer upload
+            </Button>
+          </div>
         )}
       </div>
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
@@ -1069,7 +1102,7 @@ function ObservacoesView({
         <div className="grid gap-3">
           <EditableField label="Responsável" value={draft.responsible} onChange={(v) => onUpdate("responsible", v)} />
           <EditableField label="WhatsApp" value={draft.whatsapp} onChange={(v) => onUpdate("whatsapp", v)} />
-          <EditableField label="Instagram" value={draft.instagram} onChange={(v) => { onUpdate("instagram", v); setIgImgError(false); }} />
+          <InstagramEditableField value={draft.instagram} onChange={(v) => { onUpdate("instagram", v); setIgImgError(false); }} />
           <EditableField label="Email" value={draft.email} onChange={(v) => onUpdate("email", v)} />
         </div>
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
@@ -1095,6 +1128,35 @@ function EditableField({ label, value, onChange }: { label: string; value: strin
         onChange={(e) => onChange(e.target.value)}
         className="mt-2 h-9 w-full bg-transparent text-sm font-semibold text-[#4B2E2B] outline-none"
       />
+    </label>
+  );
+}
+
+function InstagramEditableField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const handle = value.replace("@", "").trim();
+
+  return (
+    <label className="block rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
+      <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">
+        <Instagram className="h-4 w-4 text-[#D96C8A]" />
+        Instagram
+      </span>
+      <div className="mt-2 flex h-11 items-center gap-2 rounded-xl bg-[#F8F4F1] px-3">
+        <Instagram className="h-4 w-4 shrink-0 text-[#D96C8A]" />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="@perfil ou perfil"
+          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#4B2E2B] outline-none"
+        />
+      </div>
+      <p className="mt-2 text-xs leading-5 text-[#8A716D]">Pode colocar com @ ou sem @. O app abre o perfil pelo ícone do Instagram.</p>
+      {handle ? (
+        <a href={`https://instagram.com/${handle}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#F8E7EC] px-3 py-2 text-xs font-bold text-[#D96C8A]">
+          <Instagram className="h-3.5 w-3.5" />
+          Abrir @{handle}
+        </a>
+      ) : null}
     </label>
   );
 }
