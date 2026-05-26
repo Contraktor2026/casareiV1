@@ -40,7 +40,7 @@ import {
   saveVendorFinancePayment,
   updateVendorFinancePaymentStatus
 } from "@/lib/client/vendor-finance-sync";
-import { getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
+import { deleteStoredVendor, getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
 import type { Vendor, VendorDelivery, VendorPayment } from "@/types/vendors";
 import { VendorPaymentModal } from "./vendor-payment-modal";
 
@@ -94,6 +94,7 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
   const [currentVendor, setCurrentVendor] = useState<Vendor>(() => vendor ?? createEmptyVendor(vendorId));
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentModalKind, setPaymentModalKind] = useState<"contract" | "extra">("contract");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [draft, setDraft] = useState(() => draftFromVendor(vendor ?? createEmptyVendor(vendorId)));
   const [includedText, setIncludedText] = useState((vendor ?? createEmptyVendor(vendorId)).included.join("\n"));
@@ -459,6 +460,15 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
               last
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#FBEEE8] bg-[#FFFDFC] py-3.5 text-sm font-semibold text-[#B96F52] transition hover:bg-[#FBEEE8]"
+          >
+            <Trash2 className="h-4 w-4" />
+            Excluir fornecedor
+          </button>
         </div>
       </div>
 
@@ -478,6 +488,40 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
         onClose={() => setShowPaymentModal(false)}
         onSave={addPayment}
       />
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 md:items-center">
+          <div className="w-full max-w-sm rounded-[28px] bg-[#FFFDFC] p-6 shadow-[0_24px_80px_rgba(75,46,43,0.22)]">
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-[#FBEEE8]">
+              <Trash2 className="h-5 w-5 text-[#B96F52]" />
+            </div>
+            <h3 className="font-serif text-xl text-[#4B2E2B]">Excluir fornecedor?</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[#8A716D]">
+              Todos os dados de <span className="font-semibold text-[#4B2E2B]">{draft.name}</span> serão removidos permanentemente — pagamentos, tarefas, contrato e arquivos. Esta ação não pode ser desfeita.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="h-11 rounded-xl"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  deleteStoredVendor(vendorId);
+                  router.replace("/app/fornecedores");
+                }}
+                className="h-11 rounded-xl bg-[#B96F52] text-white hover:bg-[#9D5A3F]"
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
