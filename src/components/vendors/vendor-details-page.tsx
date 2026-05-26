@@ -699,9 +699,12 @@ function FinanceView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editDate, setEditDate] = useState("");
-  const extraTotal = payments
-    .filter((payment) => payment.kind === "extra")
-    .reduce((sum, payment) => sum + payment.amount, 0);
+
+  const contractPayments = payments.filter((p) => (p.kind ?? "contract") === "contract");
+  const extraPayments = payments.filter((p) => p.kind === "extra");
+  const paymentMethod = contractPayments[0]?.method ?? "";
+  const isInstallments = contractPayments.length > 1;
+  const extraTotal = extraPayments.reduce((sum, p) => sum + p.amount, 0);
 
   function startEdit(payment: VendorPayment) {
     setEditingId(payment.id);
@@ -715,34 +718,87 @@ function FinanceView({
     setEditingId(null);
   }
 
+  function PaymentEditForm({ payment, label }: { payment: VendorPayment; label: string }) {
+    return (
+      <div className="p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">{label}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs font-medium text-[#4B2E2B]">
+            Valor
+            <input
+              type="text"
+              inputMode="numeric"
+              value={editAmount}
+              onChange={(e) => setEditAmount(e.target.value)}
+              className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm font-semibold text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
+            />
+          </label>
+          <label className="text-xs font-medium text-[#4B2E2B]">
+            Vencimento
+            <input
+              type="date"
+              value={editDate}
+              onChange={(e) => setEditDate(e.target.value)}
+              className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
+            />
+          </label>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" onClick={() => saveEdit(payment.id)} className="h-9 rounded-xl bg-[#D96C8A] px-4 text-sm hover:bg-[#C85D7B]">Salvar</Button>
+          <Button type="button" variant="outline" onClick={() => setEditingId(null)} className="h-9 rounded-xl px-4 text-sm">Cancelar</Button>
+        </div>
+      </div>
+    );
+  }
+
+  function PaymentRow({ payment, label }: { payment: VendorPayment; label: string }) {
+    return (
+      <div className="flex items-center gap-3 p-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[#4B2E2B]">{label}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8A716D]">
+            <Calendar className="h-3 w-3" />
+            {payment.dueDate ? new Date(`${payment.dueDate}T12:00:00`).toLocaleDateString("pt-BR") : "Data não definida"}
+          </p>
+          {payment.status !== "pago" && (
+            <button type="button" onClick={() => onMarkPaid(payment.id)} className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#EEF3EA] px-2.5 py-1 text-[11px] font-bold text-[#5F7752]">
+              <CheckCircle2 className="h-3 w-3" />Marcar como pago
+            </button>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-serif text-base font-semibold text-[#4B2E2B]">{money(payment.amount)}</p>
+          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${payment.status === "pago" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#FBEEE8] text-[#B96F52]"}`}>
+            {payment.status === "pago" ? "Pago" : "Pendente"}
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-col gap-1 pl-1">
+          <button type="button" onClick={() => startEdit(payment)} className="grid h-8 w-8 place-items-center rounded-full text-[#8A716D] hover:bg-[#F8F4F1]" aria-label="Editar">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={() => onDelete(payment.id)} className="grid h-8 w-8 place-items-center rounded-full text-[#D28B6E] hover:bg-[#FBEEE8]" aria-label="Excluir">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="-mx-4 -mt-2 min-h-screen bg-[#F8F4F1] pb-28 md:-mx-8 lg:-mx-11">
-      <SubHeader
-        title="Financeiro"
-        onBack={onBack}
-        action={
-          <Button type="button" onClick={onSave} className="h-9 rounded-full bg-[#D96C8A] px-4 text-sm font-semibold hover:bg-[#C85D7B]">
-            Salvar
-          </Button>
-        }
-      />
+      <SubHeader title="Financeiro" onBack={onBack} />
       <div className="space-y-4 px-4 pt-4 md:px-8 lg:px-11">
+
+        {/* Resumo */}
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
           <div className="grid grid-cols-3 gap-3">
             <MetricTile label="Contratado" value={money(totalValue)} />
             <MetricTile label="Pago" value={money(paidValue)} green />
             <MetricTile label="Pendente" value={money(pendingValue)} warn />
           </div>
-          {extraTotal > 0 ? (
-            <div className="mt-3 rounded-xl bg-[#F7EEDC] px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">Despesas extras</p>
-                <p className="text-sm font-bold text-[#9A6A2F]">{money(extraTotal)}</p>
-              </div>
-            </div>
-          ) : null}
+          {savedMessage ? <p className="mt-3 rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
           <label className="mt-3 block text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">
-            Editar valor contratado
+            Valor total contratado
             <input
               value={draft.totalValue}
               onChange={(e) => onUpdate("totalValue", e.target.value)}
@@ -753,80 +809,65 @@ function FinanceView({
             />
           </label>
         </div>
-        {savedMessage ? <p className="rounded-xl bg-[#EAF3DE] px-4 py-2 text-sm font-semibold text-[#27500A]">{savedMessage}</p> : null}
-        <div className="space-y-2">
-          {payments.length === 0 && (
-            <p className="rounded-2xl bg-[#FFFDFC] p-5 text-sm text-[#8A716D]">Nenhum lançamento ainda. Adicione o primeiro pagamento ou uma despesa extra.</p>
+
+        {/* Plano de pagamento */}
+        <div className="overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+          <div className="px-4 pt-4 pb-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Plano de pagamento</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {paymentMethod ? (
+                <span className="rounded-full bg-[#F8F4F1] px-3 py-1 text-xs font-bold text-[#4B2E2B]">
+                  {paymentMethod}
+                </span>
+              ) : null}
+              {contractPayments.length > 0 ? (
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${isInstallments ? "bg-[#F8E7EC] text-[#D96C8A]" : "bg-[#EEF3EA] text-[#5F7752]"}`}>
+                  {isInstallments ? `Parcelado em ${contractPayments.length}x` : "À vista"}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          {contractPayments.length === 0 ? (
+            <p className="px-4 pb-4 text-sm text-[#8A716D]">Nenhum pagamento definido ainda. Use o botão abaixo para adicionar.</p>
+          ) : (
+            <div className="divide-y divide-[#F2EDE9] border-t border-[#F2EDE9]">
+              {contractPayments.map((payment, i) => {
+                const label = contractPayments.length === 1
+                  ? "Pagamento à vista"
+                  : `Parcela ${i + 1} de ${contractPayments.length}`;
+                return (
+                  <div key={payment.id}>
+                    {editingId === payment.id
+                      ? <PaymentEditForm payment={payment} label={label} />
+                      : <PaymentRow payment={payment} label={label} />
+                    }
+                  </div>
+                );
+              })}
+            </div>
           )}
-          {payments.map((payment) => (
-            <article key={payment.id} className="overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_4px_16px_rgba(75,46,43,0.06)] ring-1 ring-[#EEE6E1]">
-              {editingId === payment.id ? (
-                <div className="p-4 space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8A716D]">{payment.name}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="text-xs font-medium text-[#4B2E2B]">
-                      Valor
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={editAmount}
-                        onChange={(e) => setEditAmount(e.target.value)}
-                        className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm font-semibold text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
-                      />
-                    </label>
-                    <label className="text-xs font-medium text-[#4B2E2B]">
-                      Vencimento
-                      <input
-                        type="date"
-                        value={editDate}
-                        onChange={(e) => setEditDate(e.target.value)}
-                        className="mt-1 h-10 w-full rounded-xl border border-[#EEE6E1] bg-[#F8F4F1] px-3 text-sm text-[#4B2E2B] outline-none focus:border-[#D96C8A]"
-                      />
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={() => saveEdit(payment.id)} className="h-9 rounded-xl bg-[#D96C8A] px-4 text-sm hover:bg-[#C85D7B]">Salvar</Button>
-                    <Button type="button" variant="outline" onClick={() => setEditingId(null)} className="h-9 rounded-xl px-4 text-sm">Cancelar</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-[#4B2E2B]">{payment.name}</p>
-                      {(payment.kind ?? "contract") === "extra" ? (
-                        <span className="rounded-full bg-[#F7EEDC] px-2 py-0.5 text-[10px] font-bold text-[#9A6A2F]">Despesa extra</span>
-                      ) : null}
-                    </div>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8A716D]">
-                      <Calendar className="h-3 w-3" />
-                      {payment.dueDate ? new Date(`${payment.dueDate}T12:00:00`).toLocaleDateString("pt-BR") : "Data não definida"}
-                    </p>
-                    {payment.status !== "pago" && (
-                      <button type="button" onClick={() => onMarkPaid(payment.id)} className="mt-1 text-xs font-bold text-[#5F7752]">
-                        Marcar como pago
-                      </button>
-                    )}
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="font-serif text-lg text-[#4B2E2B]">{money(payment.amount)}</p>
-                    <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${payment.status === "pago" ? "bg-[#EAF3DE] text-[#27500A]" : "bg-[#FBEEE8] text-[#B96F52]"}`}>
-                      {payment.status === "pago" ? "Pago" : "Pendente"}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-1">
-                    <button type="button" onClick={() => startEdit(payment)} className="grid h-8 w-8 place-items-center rounded-full text-[#8A716D] hover:bg-[#F8F4F1]" aria-label="Editar">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" onClick={() => onDelete(payment.id)} className="grid h-8 w-8 place-items-center rounded-full text-[#D28B6E] hover:bg-[#FBEEE8]" aria-label="Excluir">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </article>
-          ))}
         </div>
+
+        {/* Despesas extras */}
+        {extraPayments.length > 0 && (
+          <div className="overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Despesas extras</p>
+              <span className="rounded-full bg-[#F7EEDC] px-3 py-1 text-xs font-bold text-[#9A6A2F]">{money(extraTotal)}</span>
+            </div>
+            <div className="divide-y divide-[#F2EDE9] border-t border-[#F2EDE9]">
+              {extraPayments.map((payment) => (
+                <div key={payment.id}>
+                  {editingId === payment.id
+                    ? <PaymentEditForm payment={payment} label={payment.name} />
+                    : <PaymentRow payment={payment} label={payment.name || "Despesa extra"} />
+                  }
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-[#EEE6E1] bg-[#F8F4F1] px-4 pb-6 pt-3 md:px-8 lg:px-11">
         <div className="grid grid-cols-2 gap-2">

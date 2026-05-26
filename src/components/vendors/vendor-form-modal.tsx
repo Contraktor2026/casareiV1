@@ -95,7 +95,8 @@ export function VendorFormModal({
       amount: parseCurrencyInput(item.value),
       dueDate: item.date,
       status: "pendente" as const,
-      method: paymentMethod
+      method: paymentMethod,
+      kind: "contract" as const
     }));
 
     const totalValue = parsedInstallments.reduce((sum, p) => sum + p.amount, 0);
