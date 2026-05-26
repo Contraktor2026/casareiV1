@@ -305,6 +305,8 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
     return <ContratoView
       draft={draft}
       vendorId={currentVendor.id}
+      includedText={includedText}
+      onIncludedChange={setIncludedText}
       onBack={() => setView("main")}
       onUpdate={update}
       onSave={() => persist()}
@@ -421,13 +423,6 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
 
           <div className="mt-4 overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
             <MenuRow
-              icon={<Clock3 className="h-4 w-4 text-[#D96C8A]" />}
-              label="Tarefas"
-              badge={pendingDeliveries.length > 0 ? `${pendingDeliveries.length} pendente${pendingDeliveries.length === 1 ? "" : "s"}` : undefined}
-              badgeClass="text-[#D96C8A]"
-              onClick={() => setView("tarefas")}
-            />
-            <MenuRow
               icon={<Wallet className="h-4 w-4 text-[#D28B6E]" />}
               label="Financeiro"
               badge={payments.length > 0 ? `${payments.length} lançamento${payments.length === 1 ? "" : "s"}` : undefined}
@@ -435,23 +430,18 @@ export function VendorDetailsPage({ vendor, vendorId }: { vendor: Vendor | null;
               onClick={() => setView("financeiro")}
             />
             <MenuRow
+              icon={<Clock3 className="h-4 w-4 text-[#D96C8A]" />}
+              label="Tarefas"
+              badge={pendingDeliveries.length > 0 ? `${pendingDeliveries.length} pendente${pendingDeliveries.length === 1 ? "" : "s"}` : undefined}
+              badgeClass="text-[#D96C8A]"
+              onClick={() => setView("tarefas")}
+            />
+            <MenuRow
               icon={<FileText className="h-4 w-4 text-[#5F7752]" />}
               label="Contrato"
               badge={currentVendor.contract.signed ? "Assinado" : currentVendor.contract.sent ? "Enviado" : "Pendente"}
               badgeClass={currentVendor.contract.signed ? "text-[#5F7752]" : "text-[#B96F52]"}
               onClick={() => setView("contrato")}
-            />
-            <MenuRow
-              icon={<FolderOpen className="h-4 w-4 text-[#6E7F91]" />}
-              label="Arquivos"
-              badge={files.length > 0 ? `${files.length} arquivo${files.length === 1 ? "" : "s"}` : undefined}
-              onClick={() => setView("arquivos")}
-            />
-            <MenuRow
-              icon={<Package className="h-4 w-4 text-[#9A6A2F]" />}
-              label="Pacote contratado"
-              badge={includedItems.length > 0 ? `${includedItems.length} item${includedItems.length === 1 ? "" : "s"}` : undefined}
-              onClick={() => setView("pacote")}
             />
             <MenuRow
               icon={<StickyNote className="h-4 w-4 text-[#8A716D]" />}
@@ -916,6 +906,8 @@ function FinanceView({
 function ContratoView({
   draft,
   vendorId,
+  includedText,
+  onIncludedChange,
   onBack,
   onUpdate,
   onSave,
@@ -923,6 +915,8 @@ function ContratoView({
 }: {
   draft: ReturnType<typeof draftFromVendor>;
   vendorId: string;
+  includedText: string;
+  onIncludedChange: (v: string) => void;
   onBack: () => void;
   onUpdate: <K extends keyof ReturnType<typeof draftFromVendor>>(field: K, value: ReturnType<typeof draftFromVendor>[K]) => void;
   onSave: () => void;
@@ -1012,6 +1006,20 @@ function ContratoView({
             {contractFileName ? "Trocar arquivo" : "Enviar arquivo"}
           </button>
           <input ref={contractFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={handleContractFile} />
+        </div>
+        <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-[#9A6A2F]" />
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Pacote contratado</span>
+          </div>
+          <p className="mt-1 text-xs text-[#8A716D]">Uma entrega por linha</p>
+          <textarea
+            value={includedText}
+            onChange={(e) => onIncludedChange(e.target.value)}
+            onBlur={onSave}
+            className="mt-3 min-h-[140px] w-full resize-none bg-transparent text-sm leading-7 text-[#4B2E2B] outline-none"
+            placeholder={"Ex: Álbum 30x30\n2 fotógrafos\nEdição em até 60 dias"}
+          />
         </div>
       </div>
     </div>
