@@ -764,6 +764,10 @@ function ClosedTab({
           <Heart className="h-7 w-7" fill="currentColor" />
         </div>
       </div>
+      <Button type="button" onClick={onInvite} className="mb-4 h-12 w-full rounded-xl bg-[#D96C8A] hover:bg-[#C85D7B]">
+        <Plus className="h-4 w-4" />
+        Cadastrar fornecedor
+      </Button>
       <div className="mb-2 flex items-center justify-between">
         <p className="text-sm font-bold text-[#4B2E2B]">Fornecedores fechados</p>
         <p className="text-xs text-[#8A716D]">{vendors.length + 1} contratados</p>
@@ -774,10 +778,6 @@ function ClosedTab({
           <VendorRow key={vendor.id} vendor={vendor} />
         ))}
       </div>
-      <Button type="button" onClick={onInvite} className="mt-4 h-12 w-full rounded-xl bg-[#D96C8A] hover:bg-[#C85D7B]">
-        <Plus className="h-4 w-4" />
-        Convidar fornecedor
-      </Button>
     </section>
   );
 }
