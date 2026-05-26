@@ -108,58 +108,62 @@ export function VendorFormModal({
   return (
     <div className="fixed inset-0 z-50 bg-[#4B2E2B]/30 backdrop-blur-sm" role="dialog" aria-modal="true">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Fechar" onClick={onClose} />
-      <div className="absolute bottom-0 left-1/2 max-h-[92vh] w-full max-w-3xl -translate-x-1/2 overflow-y-auto rounded-t-[2rem] bg-[#FFFDFC] p-5 shadow-2xl md:top-1/2 md:max-h-[88vh] md:-translate-y-1/2 md:rounded-[2rem] md:p-7">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-semibold text-[#D96C8A]">{eyebrow}</p>
-            <h2 className="mt-1 font-serif text-3xl text-[#4B2E2B]">{title}</h2>
+      <div className="absolute bottom-0 left-1/2 flex max-h-[92vh] w-full max-w-3xl -translate-x-1/2 flex-col rounded-t-[2rem] bg-[#FFFDFC] shadow-2xl md:top-1/2 md:max-h-[88vh] md:-translate-y-1/2 md:rounded-[2rem]">
+        <div className="flex-1 overflow-y-auto p-5 md:p-7">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[#D96C8A]">{eyebrow}</p>
+              <h2 className="mt-1 font-serif text-3xl text-[#4B2E2B]">{title}</h2>
+            </div>
+            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" aria-hidden />
+            </Button>
           </div>
-          <Button type="button" variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" aria-hidden />
-          </Button>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <Field label="Nome do fornecedor" value={name} onChange={setName} />
+            <label className="text-sm font-medium text-[#4B2E2B]">
+              Categoria
+              <select value={category} onChange={(event) => setCategory(event.target.value as VendorCategory)} className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]">
+                {vendorCategories.filter((item) => item !== "Todos").map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+            <Field label="Responsavel" value={responsible} onChange={setResponsible} />
+            <Field label="WhatsApp" value={whatsapp} onChange={setWhatsapp} />
+            <Field label="Email" value={email} onChange={setEmail} />
+            <Field label="Valor total" value={totalValue} onChange={setTotalValue} />
+            <Field label="Valor ja pago" value={paidValue} onChange={setPaidValue} />
+            <Field label="Valor do proximo pagamento" value={nextPaymentAmount} onChange={setNextPaymentAmount} placeholder="Ex: 1500,00" />
+            <label className="text-sm font-medium text-[#4B2E2B]">
+              Data do proximo pagamento
+              <input
+                type="date"
+                value={nextPaymentDate}
+                onChange={(event) => setNextPaymentDate(event.target.value)}
+                className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
+              />
+            </label>
+            <label className="text-sm font-medium text-[#4B2E2B]">
+              Status do contrato
+              <select
+                value={contractStatus}
+                onChange={(event) => setContractStatus(event.target.value as "nao-enviado" | "enviado" | "assinado")}
+                className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
+              >
+                <option value="nao-enviado">Fechado, mas contrato ainda nao assinado</option>
+                <option value="enviado">Contrato enviado, aguardando assinatura</option>
+                <option value="assinado">Contrato assinado</option>
+              </select>
+            </label>
+            <Field label="O que esta incluso" value={included} onChange={setIncluded} placeholder="Separe por virgulas" />
+            <Field label="Observacoes" value={note} onChange={setNote} />
+          </div>
         </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <Field label="Nome do fornecedor" value={name} onChange={setName} />
-          <label className="text-sm font-medium text-[#4B2E2B]">
-            Categoria
-            <select value={category} onChange={(event) => setCategory(event.target.value as VendorCategory)} className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]">
-              {vendorCategories.filter((item) => item !== "Todos").map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-          <Field label="Responsavel" value={responsible} onChange={setResponsible} />
-          <Field label="WhatsApp" value={whatsapp} onChange={setWhatsapp} />
-          <Field label="Email" value={email} onChange={setEmail} />
-          <Field label="Valor total" value={totalValue} onChange={setTotalValue} />
-          <Field label="Valor ja pago" value={paidValue} onChange={setPaidValue} />
-          <Field label="Valor do proximo pagamento" value={nextPaymentAmount} onChange={setNextPaymentAmount} placeholder="Ex: 1500,00" />
-          <label className="text-sm font-medium text-[#4B2E2B]">
-            Data do proximo pagamento
-            <input
-              type="date"
-              value={nextPaymentDate}
-              onChange={(event) => setNextPaymentDate(event.target.value)}
-              className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
-            />
-          </label>
-          <label className="text-sm font-medium text-[#4B2E2B]">
-            Status do contrato
-            <select
-              value={contractStatus}
-              onChange={(event) => setContractStatus(event.target.value as "nao-enviado" | "enviado" | "assinado")}
-              className="mt-2 h-12 w-full rounded-2xl border border-[#EEE6E1] bg-white px-4 outline-none focus:border-[#D96C8A]"
-            >
-              <option value="nao-enviado">Fechado, mas contrato ainda nao assinado</option>
-              <option value="enviado">Contrato enviado, aguardando assinatura</option>
-              <option value="assinado">Contrato assinado</option>
-            </select>
-          </label>
-          <Field label="O que esta incluso" value={included} onChange={setIncluded} placeholder="Separe por virgulas" />
-          <Field label="Observacoes" value={note} onChange={setNote} />
-        </div>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" className="bg-white" onClick={onClose}>Cancelar</Button>
-          <Button type="button" variant="outline" className="bg-white" onClick={() => save(true)}>Salvar e adicionar outro</Button>
-          <Button type="button" onClick={() => save(false)} className="bg-[#D96C8A] hover:bg-[#C85D7B]">Salvar fornecedor</Button>
+        <div className="shrink-0 border-t border-[#EEE6E1] bg-[#FFFDFC] px-5 pb-6 pt-4 md:px-7">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="bg-white" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" className="bg-white" onClick={() => save(true)}>Salvar e adicionar outro</Button>
+            <Button type="button" onClick={() => save(false)} className="bg-[#D96C8A] hover:bg-[#C85D7B]">Salvar fornecedor</Button>
+          </div>
         </div>
       </div>
     </div>

@@ -527,60 +527,63 @@ function ExpenseModal({ vendors, onClose, onSave }: { vendors: Vendor[]; onClose
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-black/25 md:place-items-center md:p-6">
-      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 shadow-[0_24px_90px_rgba(75,46,43,0.24)] md:max-w-2xl md:rounded-[32px]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Adicionar despesa</p>
-            <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">De onde vem esse gasto?</h2>
+      <section className="flex max-h-[92vh] w-full flex-col rounded-t-[32px] bg-white shadow-[0_24px_90px_rgba(75,46,43,0.24)] md:max-w-2xl md:rounded-[32px]">
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#D4537E]">Adicionar despesa</p>
+              <h2 className="mt-1 font-serif text-3xl text-[#4B1528]">De onde vem esse gasto?</h2>
+            </div>
+            <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-[#FBEAF0]" aria-label="Fechar">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <ModeButton active={draft.mode === "existing"} onClick={() => update("mode", "existing")} title="Fornecedor" />
-          <ModeButton active={draft.mode === "new"} onClick={() => update("mode", "new")} title="Novo" />
-          <ModeButton active={draft.mode === "single"} onClick={() => update("mode", "single")} title="Avulsa" />
-        </div>
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <ModeButton active={draft.mode === "existing"} onClick={() => update("mode", "existing")} title="Fornecedor" />
+            <ModeButton active={draft.mode === "new"} onClick={() => update("mode", "new")} title="Novo" />
+            <ModeButton active={draft.mode === "single"} onClick={() => update("mode", "single")} title="Avulsa" />
+          </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          {draft.mode === "existing" ? (
-            <Field label="Fornecedor existente">
-              <select value={draft.vendorId} onChange={(event) => update("vendorId", event.target.value)} className={controlClass}>
-                {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {draft.mode === "existing" ? (
+              <Field label="Fornecedor existente">
+                <select value={draft.vendorId} onChange={(event) => update("vendorId", event.target.value)} className={controlClass}>
+                  {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+                </select>
+              </Field>
+            ) : (
+              <TextField label={draft.mode === "new" ? "Nome do fornecedor" : "Nome da despesa"} value={draft.supplier} onChange={(value) => update("supplier", value)} placeholder="Ex: Buffet Amora" />
+            )}
+            <TextField label="Categoria" value={draft.category} onChange={(value) => update("category", value)} placeholder="Ex: Buffet" />
+            <TextField label="Valor total contratado" value={draft.totalValue} onChange={(value) => update("totalValue", formatCurrencyInput(value))} placeholder="R$ 0,00" inputMode="numeric" />
+            <TextField label="Valor desta parcela" value={draft.amount} onChange={(value) => update("amount", formatCurrencyInput(value))} placeholder="R$ 0,00" inputMode="numeric" />
+            <TextField label="Parcelas" value={draft.installments} onChange={(value) => update("installments", value)} placeholder="1" />
+            <Field label="Vencimento">
+              <input type="date" value={draft.dueDate} onChange={(event) => update("dueDate", event.target.value)} className={controlClass} />
+            </Field>
+            <Field label="Forma de pagamento">
+              <select value={draft.method} onChange={(event) => update("method", event.target.value)} className={controlClass}>
+                {["Pix", "Boleto", "Cartão de crédito", "Cartão de débito", "Transferência", "Dinheiro"].map((method) => <option key={method}>{method}</option>)}
               </select>
             </Field>
-          ) : (
-            <TextField label={draft.mode === "new" ? "Nome do fornecedor" : "Nome da despesa"} value={draft.supplier} onChange={(value) => update("supplier", value)} placeholder="Ex: Buffet Amora" />
-          )}
-          <TextField label="Categoria" value={draft.category} onChange={(value) => update("category", value)} placeholder="Ex: Buffet" />
-          <TextField label="Valor total contratado" value={draft.totalValue} onChange={(value) => update("totalValue", formatCurrencyInput(value))} placeholder="R$ 0,00" inputMode="numeric" />
-          <TextField label="Valor desta parcela" value={draft.amount} onChange={(value) => update("amount", formatCurrencyInput(value))} placeholder="R$ 0,00" inputMode="numeric" />
-          <TextField label="Parcelas" value={draft.installments} onChange={(value) => update("installments", value)} placeholder="1" />
-          <Field label="Vencimento">
-            <input type="date" value={draft.dueDate} onChange={(event) => update("dueDate", event.target.value)} className={controlClass} />
-          </Field>
-          <Field label="Forma de pagamento">
-            <select value={draft.method} onChange={(event) => update("method", event.target.value)} className={controlClass}>
-              {["Pix", "Boleto", "Cartão de crédito", "Cartão de débito", "Transferência", "Dinheiro"].map((method) => <option key={method}>{method}</option>)}
-            </select>
-          </Field>
-          <Field label="Status">
-            <select value={draft.status} onChange={(event) => update("status", event.target.value as BudgetPaymentStatus)} className={controlClass}>
-              <option value="pendente">Pendente</option>
-              <option value="proximo">Próximo</option>
-              <option value="atrasado">Atrasado</option>
-              <option value="pago">Pago</option>
-            </select>
-          </Field>
-          <TextField label="Contrato/comprovante" value={draft.receiptName} onChange={(value) => update("receiptName", value)} placeholder="Nome do arquivo ou link" />
-          <TextField label="Observação" value={draft.note} onChange={(value) => update("note", value)} placeholder="Ex: sinal do contrato" />
+            <Field label="Status">
+              <select value={draft.status} onChange={(event) => update("status", event.target.value as BudgetPaymentStatus)} className={controlClass}>
+                <option value="pendente">Pendente</option>
+                <option value="proximo">Próximo</option>
+                <option value="atrasado">Atrasado</option>
+                <option value="pago">Pago</option>
+              </select>
+            </Field>
+            <TextField label="Contrato/comprovante" value={draft.receiptName} onChange={(value) => update("receiptName", value)} placeholder="Nome do arquivo ou link" />
+            <TextField label="Observação" value={draft.note} onChange={(value) => update("note", value)} placeholder="Ex: sinal do contrato" />
+          </div>
         </div>
-
-        <Button type="button" disabled={!canSave} onClick={() => onSave(draft)} className="mt-5 h-12 w-full bg-[#D4537E] text-white hover:bg-[#993556] disabled:opacity-50">
-          Salvar despesa
-        </Button>
+        <div className="shrink-0 border-t border-[#F0E1DD] bg-white px-5 pb-6 pt-4">
+          <Button type="button" disabled={!canSave} onClick={() => onSave(draft)} className="h-12 w-full bg-[#D4537E] text-white hover:bg-[#993556] disabled:opacity-50">
+            Salvar despesa
+          </Button>
+        </div>
       </section>
     </div>
   );

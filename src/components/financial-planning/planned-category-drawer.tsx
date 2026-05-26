@@ -32,7 +32,8 @@ export function PlannedCategoryDrawer({ category, onClose, onSave }: PlannedCate
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-casarei-ink/35 p-3 backdrop-blur-sm md:items-center md:justify-center">
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-[1.75rem] border border-white/80 bg-[#fffdf9] p-5 shadow-[0_24px_80px_rgba(42,26,31,0.22)] md:max-w-2xl md:p-6">
+      <div className="flex max-h-[92vh] w-full flex-col rounded-[1.75rem] border border-white/80 bg-[#fffdf9] shadow-[0_24px_80px_rgba(42,26,31,0.22)] md:max-w-2xl">
+        <div className="flex-1 overflow-y-auto p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-casarei-primary">Categoria planejada</p>
@@ -104,13 +105,16 @@ export function PlannedCategoryDrawer({ category, onClose, onSave }: PlannedCate
           />
         </label>
 
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="button" onClick={() => onSave(category.id, values)}>
-            Salvar ajuste
-          </Button>
+        </div>
+        <div className="shrink-0 border-t border-casarei-border-soft bg-[#fffdf9] px-5 pb-6 pt-4 md:px-6">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={() => onSave(category.id, values)}>
+              Salvar ajuste
+            </Button>
+          </div>
         </div>
       </div>
     </div>
