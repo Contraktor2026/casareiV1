@@ -27,11 +27,10 @@ import { getOnboardingData } from "@/lib/client/supabase-auth";
 import { getBudgetAllocation, getStoredVendorCategories, saveBudgetAllocation } from "@/lib/client/planning-store";
 import { getStoredVendors, upsertStoredVendor } from "@/lib/client/vendors-store";
 import { getVendorFinancePayments, saveVendorFinancePayment, subscribeVendorFinancePayments } from "@/lib/client/vendor-finance-sync";
-import { budgetCategories, budgetPayments } from "@/lib/mock/budget";
 import type { BudgetCategory, BudgetPayment, BudgetPaymentStatus } from "@/types/budget";
 import type { Vendor, VendorCategory, VendorPayment } from "@/types/vendors";
 
-const today = new Date("2026-05-23T12:00:00");
+const today = new Date();
 
 type ExpenseMode = "existing" | "new" | "single";
 type ExpenseDraft = {
@@ -89,7 +88,7 @@ export function BudgetPage() {
   const [message, setMessage] = useState("");
   const [allocationDraft, setAllocationDraft] = useState<{ [k: string]: string }>({});
   const [vendorCategories, setVendorCategories] = useState<string[]>([]);
-  const allPayments = useMemo(() => sortByDueDate([...vendorPayments, ...budgetPayments]), [vendorPayments]);
+  const allPayments = useMemo(() => sortByDueDate([...vendorPayments]), [vendorPayments]);
 
   useEffect(() => {
     setVendorPayments(getVendorFinancePayments());
@@ -117,12 +116,31 @@ export function BudgetPage() {
   const nextDue = sortByDueDate(allPayments.filter((payment) => payment.status !== "pago"))[0];
   const usedPercent = plannedAmount > 0 ? Math.min(100, Math.round((committed / plannedAmount) * 100)) : 0;
 
-  const categorySummaries = budgetCategories.map((category) => {
-    const linkedPayments = allPayments.filter((payment) => payment.category.toLowerCase() === category.name.toLowerCase());
-    const paidByCategory = linkedPayments.filter((payment) => payment.status === "pago").reduce((sum, payment) => sum + payment.amount, 0);
-    const committedByCategory = linkedPayments.reduce((sum, payment) => sum + payment.amount, 0) || category.spent;
-    return { ...category, spent: Math.max(category.spent, committedByCategory, paidByCategory), linkedPayments };
-  });
+  const categorySummaries = useMemo(() => {
+    const allocation = getBudgetAllocation();
+    return vendorCategories.map((catName) => {
+      const planned = allocation[catName] ?? 0;
+      const linkedPayments = allPayments.filter((p) => p.category.toLowerCase() === catName.toLowerCase());
+      const spent = linkedPayments.reduce((s, p) => s + p.amount, 0);
+      const status: BudgetCategory["status"] =
+        planned === 0 ? "aberta" : spent > planned ? "acima" : spent >= planned * 0.8 ? "atencao" : "dentro";
+      return {
+        id: catName.toLowerCase().replace(/[^a-z0-9]/g, "-"),
+        name: catName,
+        planned,
+        spent,
+        status,
+        priority: "Media" as const,
+        supplier: "",
+        contract: "",
+        compatibility: 0,
+        included: [],
+        notes: "",
+        payments: [],
+        linkedPayments,
+      };
+    });
+  }, [vendorCategories, allPayments]);
 
   function saveExpense(draft: ExpenseDraft) {
     const amount = numberFromText(draft.amount);

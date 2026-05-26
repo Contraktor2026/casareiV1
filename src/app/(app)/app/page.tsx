@@ -65,13 +65,6 @@ const QUICK_ACTIONS = [
   { label: "Agenda", href: "/app/cronograma", icon: CheckSquare, color: "#FBEEE8", iconColor: "#B96F52" },
 ];
 
-const STARTER_STEPS = [
-  { label: "Preencher dados do casamento", href: "/onboarding", done: false },
-  { label: "Adicionar primeiros convidados", href: "/app/convidados", done: false },
-  { label: "Cadastrar fornecedores", href: "/app/fornecedores", done: false },
-  { label: "Definir orçamento", href: "/app/orcamento", done: false },
-];
-
 function getDaysLeft(dateStr: string | undefined): number | null {
   if (!dateStr) return null;
   const wedding = new Date(`${dateStr}T12:00:00`);
@@ -90,6 +83,7 @@ export default function DashboardPage() {
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
   const [guestCount, setGuestCount] = useState(0);
   const [vendorCount, setVendorCount] = useState(0);
+  const [tasksDone, setTasksDone] = useState(0);
   const [nextTask, setNextTask] = useState<PlanTask | null>(null);
   const [editingDate, setEditingDate] = useState(false);
   const [dateInput, setDateInput] = useState("");
@@ -100,6 +94,7 @@ export default function DashboardPage() {
     setGuestCount(getStoredGuests().length);
     setVendorCount(getStoredVendors().length);
     const planTasks = getStoredPlanTasks();
+    setTasksDone(planTasks.filter((t) => t.status === "Concluída").length);
     const pending = planTasks.filter((t) => t.status === "Pendente" || t.status === "Atrasada");
     pending.sort((a, b) => {
       if (a.status === "Atrasada" && b.status !== "Atrasada") return -1;
@@ -122,8 +117,6 @@ export default function DashboardPage() {
   const brideName = onboarding?.brideName || null;
   const partnerName = onboarding?.partnerName || null;
   const coupleNames = [brideName, partnerName].filter(Boolean).join(" & ") || null;
-  const hasBasics = Boolean(onboarding?.weddingDate || onboarding?.brideName);
-
   function saveDate() {
     if (!dateInput || !onboarding) return;
     const updated = { ...onboarding, weddingDate: dateInput };
@@ -131,15 +124,6 @@ export default function DashboardPage() {
     setOnboarding(updated);
     setEditingDate(false);
   }
-
-  const stepsCompleted = [
-    hasBasics,
-    guestCount > 0,
-    vendorCount > 0,
-    Boolean(onboarding?.plannedBudget),
-  ].filter(Boolean).length;
-
-  const progressPct = Math.round((stepsCompleted / STARTER_STEPS.length) * 100);
 
   return (
     <div className="space-y-4">
@@ -235,7 +219,7 @@ export default function DashboardPage() {
       {/* ── Stats rápidas ── */}
       <div className="grid grid-cols-3 gap-2">
         <StatPill value={String(guestCount)} label="convidados" />
-        <StatPill value={`${stepsCompleted}/${STARTER_STEPS.length}`} label="primeiros passos" />
+        <StatPill value={String(tasksDone)} label="tarefas feitas" />
         <StatPill value={String(vendorCount)} label="fornecedores" />
       </div>
 
@@ -304,72 +288,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
-
-      {/* ── Primeiros passos ── */}
-      {progressPct < 100 && (
-        <section
-          className="rounded-[20px] bg-white p-5 ring-1 ring-[#EEE6E1]"
-          style={{ boxShadow: "0 4px 20px rgba(75,46,43,0.06)" }}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D96C8A]">Primeiros passos</p>
-              <h2 className="mt-0.5 font-serif text-xl text-[#4B2E2B]">
-                {stepsCompleted} de {STARTER_STEPS.length} feitos
-              </h2>
-            </div>
-            <div className="relative h-11 w-11">
-              <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
-                <circle cx="22" cy="22" r="18" fill="none" stroke="#F0E8E4" strokeWidth="4" />
-                <circle
-                  cx="22" cy="22" r="18"
-                  fill="none"
-                  stroke="#D96C8A"
-                  strokeWidth="4"
-                  strokeDasharray={`${2 * Math.PI * 18}`}
-                  strokeDashoffset={`${2 * Math.PI * 18 * (1 - progressPct / 100)}`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#D96C8A]">
-                {progressPct}%
-              </span>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[#F0E8E4]">
-            <div
-              className="h-full rounded-full bg-[#D96C8A] transition-all duration-500"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {STARTER_STEPS.map((step, i) => {
-              const stepsDone = [hasBasics, guestCount > 0, vendorCount > 0, Boolean(onboarding?.plannedBudget)];
-              const done = stepsDone[i];
-              return (
-                <Link
-                  key={step.href}
-                  href={step.href}
-                  className="flex items-center gap-3 rounded-[14px] px-3 py-3 transition active:bg-[#F8F4F1]"
-                >
-                  <span
-                    className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${done ? "bg-[#D96C8A] text-white" : "bg-[#F0E8E4] text-[#8A716D]"}`}
-                  >
-                    {done ? "✓" : i + 1}
-                  </span>
-                  <span className={`flex-1 text-sm font-semibold ${done ? "text-[#9E8880] line-through" : "text-[#4B2E2B]"}`}>
-                    {step.label}
-                  </span>
-                  {!done && <ChevronRight className="h-4 w-4 text-[#C4B0AA]" />}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* ── Módulos ── */}
       <section>

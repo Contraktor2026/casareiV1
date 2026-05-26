@@ -8,9 +8,11 @@ import { ArrowLeft, CheckCircle2, FileImage, FileText, Heart, Keyboard, Sparkles
 import { Button } from "@/components/ui/button";
 import { SofiaQuotePanel } from "@/components/vendors/sofia-quote-panel";
 import { getStoredVendorCategories } from "@/lib/client/planning-store";
+import { getStoredProposals, saveStoredProposals } from "@/lib/client/quotes-store";
+import { getOnboardingData } from "@/lib/client/supabase-auth";
 import { saveVendorFinancePayment } from "@/lib/client/vendor-finance-sync";
 import { upsertStoredVendor } from "@/lib/client/vendors-store";
-import { mockQuoteProposals, quoteCategories, quoteCategoryGuides } from "@/lib/mock/quotes";
+import { quoteCategories, quoteCategoryGuides } from "@/lib/mock/quotes";
 import type { BudgetPaymentStatus } from "@/types/budget";
 import type { QuoteCategory, QuoteProposal } from "@/types/quotes";
 import type { Vendor, VendorCategory, VendorPayment } from "@/types/vendors";
@@ -35,8 +37,21 @@ const extraQuoteCategories: QuoteCategory[] = [
   "Gerador"
 ];
 
-const todayIso = "2026-05-24";
-const weekBeforeWeddingIso = "2026-10-05";
+function getTodayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getWeekBeforeWeddingIso(): string {
+  const onboarding = typeof window !== "undefined" ? getOnboardingData() : null;
+  if (onboarding?.weddingDate) {
+    const d = new Date(`${onboarding.weddingDate}T12:00:00`);
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  }
+  const d = new Date();
+  d.setMonth(d.getMonth() + 6);
+  return d.toISOString().slice(0, 10);
+}
 
 type PaymentPlanMode = "avista" | "parcelado";
 type PaymentPlanItem = {
@@ -98,7 +113,7 @@ export default function QuotesPage() {
   const [priorityCategories, setPriorityCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<QuoteCategory>("Fotografia");
   const [categories, setCategories] = useState<QuoteCategory[]>([...quoteCategories, ...extraQuoteCategories]);
-  const [proposals, setProposals] = useState<QuoteProposal[]>(mockQuoteProposals);
+  const [proposals, setProposals] = useState<QuoteProposal[]>([]);
   const [message, setMessage] = useState("");
   const [showManualForm, setShowManualForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -107,10 +122,10 @@ export default function QuotesPage() {
   const [newCategory, setNewCategory] = useState("");
 
   useEffect(() => {
+    setProposals(getStoredProposals());
     const vendorCategories = getStoredVendorCategories();
     if (vendorCategories.length === 0) return;
     setPriorityCategories(vendorCategories);
-    // Merge: priority categories first, then the rest (no duplicates)
     const allCategories = [...quoteCategories, ...extraQuoteCategories];
     const merged: QuoteCategory[] = [
       ...vendorCategories.filter((c): c is QuoteCategory => true),
@@ -119,6 +134,14 @@ export default function QuotesPage() {
     setCategories(merged);
     setActiveCategory((vendorCategories[0] as QuoteCategory) ?? "Fotografia");
   }, []);
+
+  function updateProposals(updater: (current: QuoteProposal[]) => QuoteProposal[]) {
+    setProposals((current) => {
+      const next = updater(current);
+      saveStoredProposals(next);
+      return next;
+    });
+  }
 
   const activeProposals = proposals.filter((proposal) => proposal.category === activeCategory);
   const favorites = proposals.filter((proposal) => proposal.isFavorite);
@@ -147,18 +170,18 @@ export default function QuotesPage() {
   );
 
   function toggleFavorite(id: string) {
-    setProposals((current) => current.map((proposal) => (proposal.id === id ? { ...proposal, isFavorite: !proposal.isFavorite } : proposal)));
+    updateProposals((current) => current.map((proposal) => (proposal.id === id ? { ...proposal, isFavorite: !proposal.isFavorite } : proposal)));
   }
 
   function deleteProposal(id: string) {
     if (!window.confirm("Remover esta cotação?")) return;
-    setProposals((current) => current.filter((p) => p.id !== id));
+    updateProposals((current) => current.filter((p) => p.id !== id));
     setMessage("Cotação removida.");
   }
 
   function importProposal(method: "PDF" | "JPEG", fileName?: string) {
     setActiveCategory("Fotografia");
-    setProposals((current) => (current.some((proposal) => proposal.id === importedProposal.id) ? current : [importedProposal, ...current]));
+    updateProposals((current) => (current.some((proposal) => proposal.id === importedProposal.id) ? current : [importedProposal, ...current]));
     setMessage(`${method} importado${fileName ? ` (${fileName})` : ""}: a proposta apareceu em Fotografia.`);
   }
 
@@ -193,7 +216,7 @@ export default function QuotesPage() {
       }
     };
 
-    setProposals((current) => [manualProposal, ...current]);
+    updateProposals((current) => [manualProposal, ...current]);
     setShowManualForm(false);
     setMessage(`Orçamento de ${vendorName} adicionado em ${activeCategory}.`);
   }
@@ -585,7 +608,7 @@ function ManualQuoteModal({ category, onClose, onSave }: { category: QuoteCatego
   const [vendor, setVendor] = useState("");
   const [priceLabel, setPriceLabel] = useState("");
   const [method, setMethod] = useState("Pix");
-  const [dueDate, setDueDate] = useState(todayIso);
+  const [dueDate, setDueDate] = useState(() => getTodayIso());
   const [summary, setSummary] = useState("");
   const [observations, setObservations] = useState("");
   const canSave = Boolean(vendor.trim() || priceLabel.trim() || summary.trim());
@@ -661,7 +684,7 @@ function CloseVendorPaymentModal({
   const [singlePayment, setSinglePayment] = useState<PaymentPlanItem>({
     name: "Pagamento à vista",
     amount: initialTotal,
-    dueDate: todayIso,
+    dueDate: getTodayIso(),
     method: "Pix",
     status: "pendente"
   });
@@ -818,27 +841,31 @@ function numberFromCurrency(value: string) {
 }
 
 function suggestInstallments(total: number): PaymentPlanItem[] {
+  const today = getTodayIso();
+  const finalDate = getWeekBeforeWeddingIso();
   if (!total) return buildInstallments(0, 2);
   return [
-    { name: "Entrada 30%", amount: Math.round(total * 0.3), dueDate: todayIso, method: "Pix", status: "pendente" },
-    { name: "Restante", amount: total - Math.round(total * 0.3), dueDate: weekBeforeWeddingIso, method: "Pix", status: "pendente" }
+    { name: "Entrada 30%", amount: Math.round(total * 0.3), dueDate: today, method: "Pix", status: "pendente" },
+    { name: "Restante", amount: total - Math.round(total * 0.3), dueDate: finalDate, method: "Pix", status: "pendente" }
   ];
 }
 
 function buildInstallments(total: number, count: number): PaymentPlanItem[] {
-  if (count === 1) return [{ name: "Parcela única", amount: total, dueDate: todayIso, method: "Pix", status: "pendente" }];
+  const today = getTodayIso();
+  const finalDate = getWeekBeforeWeddingIso();
+  if (count === 1) return [{ name: "Parcela única", amount: total, dueDate: today, method: "Pix", status: "pendente" }];
   const firstAmount = Math.round(total * 0.3);
   const remaining = Math.max(total - firstAmount, 0);
   const regularAmount = count > 1 ? Math.floor(remaining / (count - 1)) : remaining;
 
   return Array.from({ length: count }, (_, index) => {
-    if (index === 0) return { name: "Entrada 30%", amount: firstAmount, dueDate: todayIso, method: "Pix", status: "pendente" };
+    if (index === 0) return { name: "Entrada 30%", amount: firstAmount, dueDate: today, method: "Pix", status: "pendente" };
     const isLast = index === count - 1;
     const amount = isLast ? remaining - regularAmount * (count - 2) : regularAmount;
     return {
       name: isLast ? "Parcela final" : `Parcela ${index + 1}`,
       amount,
-      dueDate: isLast ? weekBeforeWeddingIso : addMonths(todayIso, index),
+      dueDate: isLast ? finalDate : addMonths(today, index),
       method: "Pix",
       status: "pendente"
     };
