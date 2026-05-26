@@ -985,6 +985,20 @@ function ContratoView({
           />
         </label>
         <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4 text-[#9A6A2F]" />
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Pacote contratado</span>
+          </div>
+          <p className="mt-1 text-xs text-[#8A716D]">Uma entrega por linha</p>
+          <textarea
+            value={includedText}
+            onChange={(e) => onIncludedChange(e.target.value)}
+            onBlur={onSave}
+            className="mt-3 min-h-[140px] w-full resize-none bg-transparent text-sm leading-7 text-[#4B2E2B] outline-none"
+            placeholder={"Ex: Álbum 30x30\n2 fotógrafos\nEdição em até 60 dias"}
+          />
+        </div>
+        <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
           <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Arquivo do contrato</span>
           {contractFileName ? (
             <div className="mt-3 flex items-center gap-3 rounded-xl bg-[#F8F4F1] p-3">
@@ -1006,20 +1020,6 @@ function ContratoView({
             {contractFileName ? "Trocar arquivo" : "Enviar arquivo"}
           </button>
           <input ref={contractFileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" className="hidden" onChange={handleContractFile} />
-        </div>
-        <div className="rounded-2xl bg-[#FFFDFC] p-4 shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4 text-[#9A6A2F]" />
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#8A716D]">Pacote contratado</span>
-          </div>
-          <p className="mt-1 text-xs text-[#8A716D]">Uma entrega por linha</p>
-          <textarea
-            value={includedText}
-            onChange={(e) => onIncludedChange(e.target.value)}
-            onBlur={onSave}
-            className="mt-3 min-h-[140px] w-full resize-none bg-transparent text-sm leading-7 text-[#4B2E2B] outline-none"
-            placeholder={"Ex: Álbum 30x30\n2 fotógrafos\nEdição em até 60 dias"}
-          />
         </div>
       </div>
     </div>
