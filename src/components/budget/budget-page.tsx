@@ -310,14 +310,23 @@ export function BudgetPage() {
           )}
         </section>
 
-        {/* ── Adicionar gasto ── */}
-        <button type="button" onClick={() => setShowExpenseModal(true)} className="flex w-full items-center gap-3 rounded-[22px] bg-[#D4537E] p-4 text-left text-white shadow-[0_16px_36px_rgba(212,83,126,0.22)]">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/20"><Plus className="h-5 w-5" /></span>
-          <span>
-            <strong className="block text-base">Adicionar gasto</strong>
-            <span className="mt-0.5 block text-sm text-white/80">Fornecedor ou despesa avulsa</span>
-          </span>
-        </button>
+        {/* ── Ações rápidas ── */}
+        <div className="grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => setShowExpenseModal(true)} className="flex items-center gap-3 rounded-[22px] bg-[#D4537E] p-4 text-left text-white shadow-[0_12px_28px_rgba(212,83,126,0.22)]">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/20"><Plus className="h-5 w-5" /></span>
+            <span>
+              <strong className="block text-sm leading-snug">Adicionar gasto</strong>
+              <span className="mt-0.5 block text-xs text-white/75">Fornecedor ou avulso</span>
+            </span>
+          </button>
+          <Link href="/app/orcamento/pagamentos" className="flex items-center gap-3 rounded-[22px] bg-[#2A4A1F] p-4 text-left text-white shadow-[0_12px_28px_rgba(42,74,31,0.22)]">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/20"><CalendarDays className="h-5 w-5" /></span>
+            <span>
+              <strong className="block text-sm leading-snug">Próximos pagamentos</strong>
+              <span className="mt-0.5 block text-xs text-white/75">Ver agenda completa</span>
+            </span>
+          </Link>
+        </div>
 
         {/* ── Próximos pagamentos ── */}
         {allPayments.filter((p) => p.status !== "pago").length > 0 && (
