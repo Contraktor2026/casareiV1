@@ -26,7 +26,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { confirmPermanentDelete } from "@/lib/client/confirm-delete";
-import { getStoredPendingCategories, getStoredVendors, saveStoredPendingCategories, upsertStoredVendor } from "@/lib/client/vendors-store";
+import { deleteStoredVendor, getStoredPendingCategories, getStoredVendors, saveStoredPendingCategories, upsertStoredVendor } from "@/lib/client/vendors-store";
 import type { QuoteProposal } from "@/types/quotes";
 import type { Vendor, VendorStatus } from "@/types/vendors";
 import { SofiaQuotePanel } from "./sofia-quote-panel";
@@ -151,6 +151,15 @@ export function VendorsPage() {
     setMessage(`${category} removido dos pendentes.`);
   }
 
+  function deleteVendor(id: string) {
+    const vendor = vendors.find((v) => v.id === id);
+    const canDelete = confirmPermanentDelete({ itemName: vendor?.name ?? "este fornecedor", context: "Ele será removido da lista de fornecedores." });
+    if (!canDelete) return;
+    deleteStoredVendor(id);
+    setVendors((current) => current.filter((v) => v.id !== id));
+    setMessage("Fornecedor removido.");
+  }
+
   function goToQuotes() {
     router.push("/app/cotacoes");
   }
@@ -258,6 +267,7 @@ export function VendorsPage() {
           query={query}
           onQuery={setQuery}
           onFilter={() => setShowFilter(true)}
+          onDelete={deleteVendor}
         />
       ) : null}
       {renderModals()}
@@ -991,7 +1001,7 @@ function PendingDetail({ category, onAdd, onSofia }: { category: string; onAdd: 
   );
 }
 
-function AllTab({ vendors, query, onQuery, onFilter }: { vendors: Vendor[]; query: string; onQuery: (value: string) => void; onFilter: () => void }) {
+function AllTab({ vendors, query, onQuery, onFilter, onDelete }: { vendors: Vendor[]; query: string; onQuery: (value: string) => void; onFilter: () => void; onDelete: (id: string) => void }) {
   return (
     <section>
       <div className="mb-4 grid grid-cols-[1fr_auto] gap-3">
@@ -1006,17 +1016,22 @@ function AllTab({ vendors, query, onQuery, onFilter }: { vendors: Vendor[]; quer
       <h2 className="text-base font-bold text-[#4B2E2B]">Todos os fornecedores ({vendors.length})</h2>
       <div className="mt-3 overflow-hidden rounded-2xl bg-[#FFFDFC] shadow-[0_8px_28px_rgba(75,46,43,0.07)] ring-1 ring-[#EEE6E1]">
         {vendors.map((vendor) => (
-          <Link key={vendor.id} href={`/app/fornecedores/${vendor.id}`} className="flex items-center gap-3 border-b border-[#EEE6E1] p-4 last:border-b-0">
-            <CategoryMark category={vendor.category} compact />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-[#4B2E2B]">{vendor.name}</p>
-              <p className="text-xs text-[#8A716D]">{vendor.category}</p>
-            </div>
-            <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusTone(vendor.status)}`}>
-              {statusLabel(vendor.status)}
-            </span>
-            <ChevronRight className="h-4 w-4 text-[#8A716D]" />
-          </Link>
+          <div key={vendor.id} className="flex items-center gap-2 border-b border-[#EEE6E1] px-4 last:border-b-0">
+            <Link href={`/app/fornecedores/${vendor.id}`} className="flex flex-1 items-center gap-3 py-4 min-w-0">
+              <CategoryMark category={vendor.category} compact />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-[#4B2E2B]">{vendor.name}</p>
+                <p className="text-xs text-[#8A716D]">{vendor.category}</p>
+              </div>
+              <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusTone(vendor.status)}`}>
+                {statusLabel(vendor.status)}
+              </span>
+              <ChevronRight className="h-4 w-4 text-[#8A716D]" />
+            </Link>
+            <button type="button" onClick={() => onDelete(vendor.id)} className="shrink-0 grid h-8 w-8 place-items-center rounded-full text-[#D96C8A] hover:bg-[#F8E7EC]" aria-label="Excluir">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         ))}
       </div>
     </section>

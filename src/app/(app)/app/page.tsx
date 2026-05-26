@@ -16,19 +16,47 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { getOnboardingData, getSession } from "@/lib/client/supabase-auth";
+import { getOnboardingData, getSession, saveOnboardingData } from "@/lib/client/supabase-auth";
 import { getStoredGuests } from "@/lib/client/guests-store";
 import { getStoredPlanTasks, type PlanTask } from "@/lib/client/planning-store";
 import { getStoredVendors } from "@/lib/client/vendors-store";
 import type { OnboardingData } from "@/types/onboarding";
 
-const SOFIA_MESSAGES = [
-  "Cada decisão tomada hoje é um passo a menos pra se preocupar depois. Você está indo bem.",
-  "Casar não é só organizar uma festa — é construir uma memória que vai durar para sempre.",
-  "Respira fundo. O casamento dos seus sonhos está tomando forma, um detalhe de cada vez.",
-  "Você não precisa resolver tudo hoje. O que importa é continuar avançando.",
-  "Lembra do porquê você está fazendo isso. O resto é detalhe.",
+const DAILY_TIPS = [
+  "Dica: Feche os principais fornecedores com pelo menos 8 meses de antecedência — espaços e fotógrafos esgotam rápido.",
+  "Dica: Antes de pedir cotações, defina um valor máximo por categoria. Facilita muito a comparação.",
+  "Dica: Confirme os convidados em dois momentos: save the date e convite formal. Reduza as surpresas no buffet.",
+  "Dica: Guarde os contratos digitalizados no Google Drive ou similar. Você vai precisar deles na revisão final.",
+  "Dica: Visite o espaço no mesmo horário do seu casamento para ver a iluminação real.",
+  "Dica: Peça ao fotógrafo referências de trabalhos em locais parecidos com o seu. Iluminação muda tudo.",
+  "Dica: Reserve uma linha extra no orçamento (10–15%) para imprevistos. Eles aparecem.",
+  "Dica: O cronograma do dia deve ser testado com o cerimonialista pelo menos duas vezes antes do casamento.",
+  "Dica: Confirme a capacidade do espaço incluindo equipe, fotógrafo e DJ — não só convidados.",
+  "Dica: Comunique restrições alimentares ao buffet com no mínimo 2 semanas de antecedência.",
+  "Dica: Faça uma lista separada dos convidados que precisam de transporte — facilita o planejamento.",
+  "Dica: Crie um grupo de WhatsApp com os fornecedores principais para facilitar a comunicação no dia.",
+  "Dica: Revise cada contrato antes de assinar: o que está e o que não está incluído no valor.",
+  "Dica: Agende a prova do vestido com pelo menos 3 meses de antecedência para ter tempo de ajustes.",
+  "Dica: Anote os momentos obrigatórios para o fotógrafo: entrada, troca de alianças, primeiro beijo, bolo.",
+  "Dica: Considere um dia de folga logo depois do casamento antes de viajar — você vai precisar descansar.",
+  "Dica: Negocie o que está incluído no buffet: mesa dos noivos, cortador de bolo, guardanapos personalizados.",
+  "Dica: Tenha um kit emergência no dia: alfinetes, fita dupla face, analgésico, carregador portátil.",
+  "Dica: Decida quem será o ponto de contato com os fornecedores no dia — não precisa ser você.",
+  "Dica: Revise a lista de convidados junto com seu parceiro — memórias e obrigações de cada lado do casal importam.",
+  "Dica: Faça ao menos três cotações por categoria antes de fechar. Diferenças de preço e serviço surpreendem.",
+  "Dica: Convites digitais podem economizar e chegam mais rápido — considere para quem mora longe.",
+  "Dica: Coloque uma caixa de sugestões de músicas no convite — os convidados adoram participar.",
+  "Dica: Planeje a chegada ao espaço com 1h de antecedência para resolver qualquer imprevisto com calma.",
+  "Dica: Defina claramente o estilo visual do casamento antes de contratar o decorador — referências visuais evitam retrabalho.",
+  "Dica: Se contratar DJ, peça setlist com os 5 momentos-chave: entrada, jantar, festa, último dance, saída.",
+  "Dica: Tenha um plano B para chuva se for cerimônia ao ar livre — e comunique aos fornecedores antecipadamente.",
 ];
+
+function getDailyTip(): string {
+  const now = new Date();
+  const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000);
+  return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
+}
 
 const QUICK_ACTIONS = [
   { label: "Convidados", href: "/app/convidados", icon: Users, color: "#EEF1F4", iconColor: "#6E7F91" },
@@ -63,6 +91,9 @@ export default function DashboardPage() {
   const [guestCount, setGuestCount] = useState(0);
   const [vendorCount, setVendorCount] = useState(0);
   const [nextTask, setNextTask] = useState<PlanTask | null>(null);
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateInput, setDateInput] = useState("");
+  const dailyTip = useMemo(() => getDailyTip(), []);
 
   useEffect(() => {
     setOnboarding(getOnboardingData());
@@ -93,10 +124,13 @@ export default function DashboardPage() {
   const coupleNames = [brideName, partnerName].filter(Boolean).join(" & ") || null;
   const hasBasics = Boolean(onboarding?.weddingDate || onboarding?.brideName);
 
-  const sofiaMessage = useMemo(() => {
-    const idx = new Date().getDay() % SOFIA_MESSAGES.length;
-    return SOFIA_MESSAGES[idx];
-  }, []);
+  function saveDate() {
+    if (!dateInput || !onboarding) return;
+    const updated = { ...onboarding, weddingDate: dateInput };
+    saveOnboardingData(updated);
+    setOnboarding(updated);
+    setEditingDate(false);
+  }
 
   const stepsCompleted = [
     hasBasics,
@@ -140,16 +174,21 @@ export default function DashboardPage() {
               <CalendarDays className="h-7 w-7 text-white/70" />
             </div>
             <p className="mt-3 text-sm font-semibold text-white/80">Data do casamento não definida</p>
-            <Link
-              href="/onboarding"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20"
-            >
-              Definir data <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </div>
         )}
 
-        {(weddingDate || city) && (
+        {editingDate ? (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <input
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+              className="rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold text-white outline-none"
+            />
+            <button type="button" onClick={saveDate} className="rounded-xl bg-white/25 px-3 py-2 text-xs font-bold text-white">Salvar</button>
+            <button type="button" onClick={() => setEditingDate(false)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white/60">✕</button>
+          </div>
+        ) : (
           <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-white/60">
             {weddingDate && (
               <span className="flex items-center gap-1">
@@ -163,6 +202,14 @@ export default function DashboardPage() {
                 {city}{state ? `, ${state}` : ""}
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => { setDateInput(onboarding?.weddingDate ?? ""); setEditingDate(true); }}
+              className="flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/70 transition hover:bg-white/20"
+            >
+              <CalendarDays className="h-3 w-3" />
+              {daysLeft !== null ? "Editar data" : "Definir data"}
+            </button>
           </div>
         )}
 
@@ -176,9 +223,9 @@ export default function DashboardPage() {
               <Sparkles className="h-4 w-4 text-white" strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-white/50 uppercase tracking-wide">Sofia</p>
+              <p className="text-[11px] font-bold text-white/50 uppercase tracking-wide">Dica do dia</p>
               <p className="mt-0.5 text-sm leading-[1.55] text-white/85">
-                Oi, {firstName}. {sofiaMessage}
+                {dailyTip}
               </p>
             </div>
           </div>

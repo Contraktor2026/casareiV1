@@ -30,6 +30,10 @@ export function upsertStoredVendor(vendor: Vendor) {
   saveStoredVendors(exists ? current.map((item) => (item.id === vendor.id ? vendor : item)) : [vendor, ...current]);
 }
 
+export function deleteStoredVendor(vendorId: string) {
+  saveStoredVendors(getStoredVendors().filter((v) => v.id !== vendorId));
+}
+
 export function getStoredPendingCategories(): string[] {
   if (typeof window === "undefined") return [];
   return readArray<string>(pendingCategoriesKey());

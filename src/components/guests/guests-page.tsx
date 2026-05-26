@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
   Clock3,
+  Download,
   Mail,
   MessageCircle,
   Plus,
@@ -24,7 +25,9 @@ import {
   saveRsvpSettings,
   type StoredRsvpSettings
 } from "@/lib/client/guests-rsvp-store";
+import { exportGuestsToPdf } from "@/lib/client/guests-pdf-export";
 import { getStoredGuests, saveStoredGuests } from "@/lib/client/guests-store";
+import { getOnboardingData } from "@/lib/client/supabase-auth";
 import { slugifyGroup, type GuestGroupTone } from "@/lib/guests/groups";
 import type { Guest, GuestRsvpStatus } from "@/types/guests";
 import { getGuestName } from "./guest-helpers";
@@ -355,10 +358,27 @@ function GuestSummary({
         <SummaryCard icon={<Clock3 />} title="Precisa revisar" value={String(incomplete)} sub={`${groupsCount} grupos cadastrados`} note="Dados incompletos na base" tone="pink" />
       </div>
 
-      <Button type="button" onClick={onAdd} className="h-14 w-full rounded-2xl bg-casarei-pink text-white hover:bg-casarei-pink-hover">
-        <Plus className="h-4 w-4" />
-        Adicionar convidado
-      </Button>
+      <div className="grid grid-cols-2 gap-3">
+        <Button type="button" onClick={onAdd} className="h-14 rounded-2xl bg-casarei-pink text-white hover:bg-casarei-pink-hover">
+          <Plus className="h-4 w-4" />
+          Adicionar
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={guests.length === 0}
+          className="h-14 rounded-2xl border-casarei-border-soft bg-white"
+          onClick={() => {
+            const ob = getOnboardingData();
+            const couple = [ob?.brideName, ob?.partnerName].filter(Boolean).join(" & ") || undefined;
+            const date = ob?.weddingDate ? new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(`${ob.weddingDate}T12:00:00`)) : undefined;
+            exportGuestsToPdf(guests, couple, date);
+          }}
+        >
+          <Download className="h-4 w-4" />
+          Exportar PDF
+        </Button>
+      </div>
 
       <section className="rounded-[26px] bg-casarei-surface p-5 shadow-[0_14px_40px_rgba(75,46,43,0.06)] ring-1 ring-casarei-border-soft">
         <h2 className="text-sm font-bold text-casarei-text-primary">Ações rápidas</h2>
@@ -919,18 +939,19 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [picking, setPicking] = useState(false);
   const [agendaError, setAgendaError] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("Convidados importados");
   const fileRef = useRef<HTMLInputElement>(null);
   const supportsContactApi = contactPickerSupported();
 
   const valid = rows.filter((r) => r.valid).length;
   const errors = rows.filter((r) => !r.valid).length;
 
-  // Re-parse whenever text changes (only for "texto" tab)
+  // Re-parse whenever text or selectedGroup changes (only for "texto" tab)
   useEffect(() => {
     if (tab === "texto") {
-      setRows(text.trim() ? parseGuestText(text) : []);
+      setRows(text.trim() ? parseGuestText(text).map((r) => ({ ...r, group: r.group !== "Convidados importados" ? r.group : selectedGroup })) : []);
     }
-  }, [text, tab]);
+  }, [text, tab, selectedGroup]);
 
   async function pickFromAgenda() {
     setAgendaError("");
@@ -941,7 +962,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
         ["name", "tel", "email"],
         { multiple: true }
       );
-      const parsed = fromContactApi(contacts ?? []);
+      const parsed = fromContactApi(contacts ?? []).map((r) => ({ ...r, group: selectedGroup }));
       setRows(parsed);
       if (parsed.length === 0) setAgendaError("Nenhum contato selecionado.");
     } catch {
@@ -995,19 +1016,34 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
 
           {tab === "texto" && (
             <>
-              <div className="rounded-2xl bg-casarei-app p-4">
-                <p className="text-xs font-bold text-casarei-text-secondary mb-1">Formatos aceitos (um por linha):</p>
-                <p className="text-xs text-casarei-text-secondary leading-5">
-                  <b>Só o nome:</b> João Silva<br />
-                  <b>Com telefone:</b> João Silva, (11) 99999-9999<br />
-                  <b>Completo:</b> João Silva, Família da noiva, 11999999999
+              <div className="rounded-2xl bg-[#FFF8F4] border border-[#F3C7D2] p-4 space-y-2">
+                <p className="text-xs font-bold text-casarei-text-primary">Exemplo de como organizar sua lista:</p>
+                <div className="rounded-xl bg-white p-3 font-mono text-xs text-[#4B2E2B] leading-6">
+                  <span className="text-[#8A716D]"># Formato: Nome, Grupo, Telefone, E-mail</span><br />
+                  João Silva, Família da noiva, (11) 99999-0001, joao@email.com<br />
+                  Maria Santos, Amigos da noiva, 11988887777<br />
+                  Carlos Oliveira, Família do noivo<br />
+                  Ana Lima
+                </div>
+                <p className="text-[11px] text-casarei-text-secondary leading-5">
+                  Cada linha = 1 convidado. Separar por vírgula. Grupo e telefone são opcionais. O parser detecta telefones automaticamente.
                 </p>
+              </div>
+              <div>
+                <p className="mb-1.5 text-xs font-bold text-casarei-text-secondary">Grupo padrão para esta importação</p>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full rounded-2xl border border-casarei-border-soft bg-casarei-app px-4 py-2.5 text-sm font-semibold text-casarei-text-primary outline-none focus:border-casarei-pink"
+                >
+                  {defaultGuestGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
               </div>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={6}
-                placeholder={"João Silva\nMaria Santos, Família da noiva\nCarlos, Amigos do noivo, (11) 98888-7777"}
+                placeholder={"João Silva, Família da noiva, (11) 99999-0001\nMaria Santos, Amigos, 11988887777\nCarlos Oliveira"}
                 className="w-full resize-none rounded-2xl bg-casarei-app p-4 text-sm font-semibold text-casarei-text-primary outline-none placeholder:font-normal placeholder:text-casarei-text-secondary"
               />
             </>
@@ -1015,6 +1051,16 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
 
           {tab === "agenda" && (
             <div className="space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs font-bold text-casarei-text-secondary">Grupo para os contatos importados</p>
+                <select
+                  value={selectedGroup}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  className="w-full rounded-2xl border border-casarei-border-soft bg-casarei-app px-4 py-2.5 text-sm font-semibold text-casarei-text-primary outline-none focus:border-casarei-pink"
+                >
+                  {defaultGuestGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
               {supportsContactApi ? (
                 /* Contact Picker API — Android Chrome */
                 <div className="rounded-2xl bg-casarei-app p-5 text-center space-y-3">
@@ -1037,7 +1083,7 @@ function ImportGuestSheet({ onClose, onImport }: { onClose: () => void; onImport
                     disabled={picking}
                     className="h-12 w-full rounded-2xl bg-casarei-pink text-sm font-bold text-white disabled:opacity-60"
                   >
-                    {picking ? "Abrindo agenda…" : rows.length > 0 ? `${rows.length} contato(s) selecionado(s) — selecionar mais` : "Abrir agenda do celular"}
+                    {picking ? "Abrindo agenda…" : rows.length > 0 ? `${rows.length} contato(s) — selecionar mais` : "Abrir agenda do celular"}
                   </button>
                 </div>
               ) : (

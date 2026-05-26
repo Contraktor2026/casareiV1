@@ -150,6 +150,12 @@ export default function QuotesPage() {
     setProposals((current) => current.map((proposal) => (proposal.id === id ? { ...proposal, isFavorite: !proposal.isFavorite } : proposal)));
   }
 
+  function deleteProposal(id: string) {
+    if (!window.confirm("Remover esta cotação?")) return;
+    setProposals((current) => current.filter((p) => p.id !== id));
+    setMessage("Cotação removida.");
+  }
+
   function importProposal(method: "PDF" | "JPEG", fileName?: string) {
     setActiveCategory("Fotografia");
     setProposals((current) => (current.some((proposal) => proposal.id === importedProposal.id) ? current : [importedProposal, ...current]));
@@ -409,7 +415,7 @@ export default function QuotesPage() {
           {activeProposals.length ? (
             <section className="grid gap-4 lg:grid-cols-2">
               {activeProposals.map((proposal) => (
-                <ProposalDecisionCard key={proposal.id} proposal={proposal} onFavorite={() => toggleFavorite(proposal.id)} onCloseVendor={() => setClosingProposal(proposal)} />
+                <ProposalDecisionCard key={proposal.id} proposal={proposal} onFavorite={() => toggleFavorite(proposal.id)} onCloseVendor={() => setClosingProposal(proposal)} onDelete={() => deleteProposal(proposal.id)} />
               ))}
             </section>
           ) : (
@@ -481,7 +487,7 @@ function DecisionHint({ title, proposal }: { title: string; proposal?: QuoteProp
   );
 }
 
-function ProposalDecisionCard({ proposal, onFavorite, onCloseVendor }: { proposal: QuoteProposal; onFavorite: () => void; onCloseVendor: () => void }) {
+function ProposalDecisionCard({ proposal, onFavorite, onCloseVendor, onDelete }: { proposal: QuoteProposal; onFavorite: () => void; onCloseVendor: () => void; onDelete: () => void }) {
   const [showSummary, setShowSummary] = useState(false);
   return (
     <article className="rounded-[26px] bg-white p-5 shadow-[0_14px_36px_rgba(75,46,43,0.07)] ring-1 ring-[#F0E1DD]">
@@ -514,13 +520,17 @@ function ProposalDecisionCard({ proposal, onFavorite, onCloseVendor }: { proposa
         <MiniList title="Atenção" items={proposal.attentionPoints.slice(0, 4)} />
       </div>
 
-      <div className="mt-5 grid gap-2 sm:grid-cols-3">
+      <div className="mt-5 grid gap-2 sm:grid-cols-4">
         <Button type="button" variant="outline" onClick={() => setShowSummary(true)} className="bg-white">Ver resumo</Button>
         <Button type="button" variant="outline" onClick={onFavorite} className="bg-white">
           <Star className="h-4 w-4" />
           Favoritar
         </Button>
         <Button type="button" onClick={onCloseVendor} className="bg-[#D4537E] hover:bg-[#993556]">Fechar fornecedor</Button>
+        <Button type="button" variant="outline" onClick={onDelete} className="bg-white text-[#D4537E] border-[#F3C7D2]">
+          <X className="h-4 w-4" />
+          Excluir
+        </Button>
       </div>
 
       {showSummary ? <SummaryModal proposal={proposal} onClose={() => setShowSummary(false)} /> : null}
